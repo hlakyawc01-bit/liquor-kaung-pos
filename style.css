@@ -5,589 +5,91 @@
 body{
   margin:0;
   font-family:Arial,sans-serif;
-  background:#eef1f6;
-  color:#1c2638;
-}
-
-button{
-  border:0;
-  border-radius:10px;
-  padding:12px 16px;
-  background:#243861;
-  color:#fff;
-  font-size:15px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-button:active{
-  transform:scale(.98);
-}
-
-input,
-select{
-  width:100%;
-  padding:12px;
-  border:1px solid #cbd2df;
-  border-radius:8px;
-  background:#fff;
-  font-size:15px;
-}
-
-.hidden{
-  display:none!important;
+  background:#eef1f7;
+  color:#273044;
 }
 
 
-/* ================= LOGIN ================= */
+/* LOGIN */
 
 .loginPage{
   min-height:100vh;
   display:grid;
   place-items:center;
-  padding:20px;
-  background:linear-gradient(135deg,#172a5b,#304b83);
+  padding:25px;
+  background:
+    linear-gradient(
+      135deg,
+      #142449,
+      #2d426e
+    );
 }
 
 .loginCard{
-  width:min(100%,400px);
-  background:#fff;
-  padding:35px 25px;
-  border-radius:20px;
+  width:min(100%,600px);
+  background:#f8f8f8;
+  border-radius:38px;
+  padding:60px 48px 50px;
   text-align:center;
-  box-shadow:0 15px 40px #0004;
+
+  box-shadow:
+    0 20px 60px #0005;
 }
 
-.loginLogo{
-  font-size:50px;
-}
-
-.loginCard h1{
-  margin:10px 0 5px;
-  color:#243861;
-}
-
-.loginCard p{
-  color:#778195;
-  font-size:13px;
-  letter-spacing:2px;
-}
-
-.loginCard input{
-  margin-top:10px;
-}
-
-.loginCard button{
-  width:100%;
-  margin-top:15px;
-}
-
-
-/* ================= HEADER ================= */
-
-header{
-  background:#263a68;
-  color:#fff;
-  padding:16px 20px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-header b{
-  font-size:23px;
-  letter-spacing:1px;
-}
-
-header span{
-  display:block;
-  margin-top:4px;
-  font-size:11px;
-  letter-spacing:2px;
-  opacity:.75;
-}
-
-.logoutBtn{
-  background:#fff;
-  color:#263a68;
-}
-
-
-/* ================= NAV ================= */
-
-nav{
-  display:flex;
-  gap:10px;
-  overflow:auto;
-  padding:14px;
-  background:#fff;
-  border-bottom:1px solid #e4e7ed;
-}
-
-.nav{
-  flex:1;
-  min-width:130px;
-  background:#edf0f5;
-  color:#344052;
-  font-size:17px;
-}
-
-.nav.active{
-  background:#263a68;
-  color:#fff;
-}
-
-
-/* ================= MAIN ================= */
-
-main{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
-
-.panel{
-  background:#fff;
-  padding:22px;
-  border-radius:18px;
-  box-shadow:0 4px 18px #1b2b4b12;
-  margin-bottom:18px;
-}
-
-.panel h2{
-  margin-top:0;
-  color:#243861;
-}
-
-.panel h3{
-  margin-top:30px;
-  color:#3b4658;
-}
-
-
-/* ================= SALE ================= */
-
-.saleGrid{
-  display:grid;
-  grid-template-columns:1.5fr 1fr;
-  gap:18px;
-}
-
-.panelTitle{
-  display:flex;
-  gap:15px;
-  align-items:center;
+.logo{
+  font-size:85px;
   margin-bottom:15px;
 }
 
-.panelTitle h2{
-  white-space:nowrap;
+.loginCard h1{
   margin:0;
+  color:#263b64;
+  font-size:52px;
+  letter-spacing:2px;
+  font-weight:500;
 }
 
-.saleProducts{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-  gap:12px;
+.subtitle{
+  color:#778090;
+  font-size:19px;
+  letter-spacing:6px;
+  margin:22px 0 42px;
 }
 
-.saleProduct{
-  border:1px solid #e0e4eb;
-  border-radius:14px;
-  padding:15px;
-  background:#fff;
-}
-
-.saleProduct h4{
-  margin:0 0 10px;
-}
-
-.saleProduct small{
-  color:#718096;
-  display:block;
-  margin-bottom:10px;
-}
-
-.saleProduct b{
-  color:#243861;
-  display:block;
-  margin-bottom:12px;
-}
-
-.saleProduct button{
+.loginCard input{
   width:100%;
-}
-
-
-.cartPanel{
-  position:sticky;
-  top:10px;
-  height:max-content;
-}
-
-.cartItem{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:8px;
-  border-bottom:1px dashed #d9dee8;
-  padding:12px 0;
-}
-
-.cartName{
-  font-weight:bold;
-}
-
-.cartPrice{
-  color:#697386;
-  font-size:13px;
-}
-
-.cartControls{
-  display:flex;
-  align-items:center;
-  gap:5px;
-}
-
-.qtyBtn{
-  padding:5px 10px;
-  border-radius:6px;
-  background:#64748b;
-}
-
-.removeBtn{
-  background:#b52c36;
-  padding:5px 10px;
-  border-radius:6px;
-}
-
-
-.totalBox{
-  margin-top:20px;
-  border-top:2px solid #e5e8ef;
-  padding-top:12px;
-}
-
-.totalBox div{
-  display:flex;
-  justify-content:space-between;
-  padding:7px 0;
-}
-
-.totalBox .grand{
-  font-size:21px;
-  color:#243861;
-  border-top:1px solid #ddd;
-  margin-top:5px;
-}
-
-.cartPanel label{
-  display:block;
-  margin:15px 0 6px;
-  font-weight:bold;
-}
-
-.payBtn{
-  width:100%;
-  background:#17814b;
-  margin-top:18px;
-}
-
-.clearBtn{
-  width:100%;
-  margin-top:10px;
-  background:#697586;
-}
-
-
-/* ================= PRODUCTS ================= */
-
-.titleRow{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-}
-
-.productForm{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
-  padding:15px;
-  margin:15px 0;
-  background:#f3f5f8;
-  border-radius:12px;
-}
-
-.productForm input:nth-child(5){
-  grid-column:span 2;
-}
-
-.productForm button{
-  grid-column:span 1;
-}
-
-.cancelBtn{
-  background:#6d7787;
-}
-
-.productItem{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:10px;
-  align-items:center;
-  padding:15px 0;
-  border-bottom:1px solid #e6e9ee;
-}
-
-.productInfo b{
-  display:block;
-}
-
-.productInfo span{
-  font-size:13px;
-  color:#6d7787;
-}
-
-.productActions{
-  display:flex;
-  gap:7px;
-}
-
-.editBtn{
-  background:#526f9e;
-}
-
-.deleteBtn,
-.dangerBtn{
-  background:#b72f3c;
-}
-
-
-/* ================= REPORT ================= */
-
-.reportGrid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:15px;
-  margin-bottom:18px;
-}
-
-.statCard{
-  background:#263a68;
-  color:#fff;
   padding:22px;
-  border-radius:16px;
-}
-
-.statCard span{
-  display:block;
-  opacity:.75;
-}
-
-.statCard b{
-  font-size:24px;
-  display:block;
-  margin-top:8px;
-}
-
-.saleItem{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  padding:15px 0;
-  border-bottom:1px solid #e7eaf0;
-}
-
-.saleItem small{
-  display:block;
-  color:#718096;
-}
-
-
-/* ================= SETTINGS ================= */
-
-.settingsGrid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
+  font-size:20px;
   margin-bottom:20px;
+
+  border:2px solid #d1d5dc;
+  border-radius:17px;
+
+  background:#f9f9f9;
 }
 
-.settingsPanel button{
-  margin-top:10px;
-}
+.loginBtn{
+  width:100%;
+  border:0;
 
-.dataPanel button,
-.fileBtn{
-  margin-right:8px;
-  margin-bottom:8px;
-}
+  padding:22px;
 
-.fileBtn{
-  display:inline-block;
-  padding:12px 16px;
-  border-radius:10px;
-  background:#657184;
-  color:#fff;
-  font-weight:bold;
+  border-radius:18px;
+
+  background:#344970;
+  color:white;
+
+  font-size:22px;
+  letter-spacing:2px;
+
   cursor:pointer;
 }
 
-.fileBtn input{
-  display:none;
+.demo{
+  font-size:18px;
+  color:#555e6c;
+  margin:12px 0 0;
 }
 
 
-/* ================= RECEIPT ================= */
-
-.modal{
-  position:fixed;
-  inset:0;
-  background:#0009;
-  z-index:100;
-  padding:20px;
-  overflow:auto;
-}
-
-.receiptWrap{
-  width:max-content;
-  margin:auto;
-}
-
-.modalButtons{
-  display:flex;
-  gap:10px;
-  margin-bottom:10px;
-}
-
-.receipt{
-  width:80mm;
-  min-height:220mm;
-  background:#fff;
-  color:#111;
-  padding:8mm 6mm;
-  font-family:"Courier New",monospace;
-  font-size:11px;
-  line-height:1.45;
-  white-space:pre-wrap;
-  box-shadow:0 5px 30px #0008;
-}
-
-.receiptCenter{
-  text-align:center;
-}
-
-.receiptLine{
-  border-top:1px dashed #222;
-  margin:8px 0;
-}
-
-.receiptRow{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.receiptTitle{
-  font-size:20px;
-  font-weight:bold;
-  text-align:center;
-  margin:18px 0;
-}
-
-.receiptItem{
-  margin:10px 0;
-}
-
-.barcode{
-  margin-top:20px;
-  text-align:center;
-  letter-spacing:3px;
-  font-size:24px;
-  font-family:monospace;
-}
-
-
-/* ================= MOBILE ================= */
-
-@media(max-width:750px){
-
-  header{
-    padding:14px;
-  }
-
-  header b{
-    font-size:18px;
-  }
-
-  main{
-    padding:14px;
-  }
-
-  .saleGrid{
-    grid-template-columns:1fr;
-  }
-
-  .cartPanel{
-    position:static;
-  }
-
-  .panelTitle{
-    display:block;
-  }
-
-  .panelTitle h2{
-    margin-bottom:12px;
-  }
-
-  .saleProducts{
-    grid-template-columns:repeat(2,1fr);
-  }
-
-  .settingsGrid,
-  .productForm,
-  .reportGrid{
-    grid-template-columns:1fr;
-  }
-
-  .productForm input:nth-child(5){
-    grid-column:span 1;
-  }
-
-  .titleRow{
-    align-items:flex-start;
-    flex-direction:column;
-  }
-
-  .receipt{
-    width:95vw;
-    min-height:200mm;
-  }
-
-}
-
-
-@media print{
-
-  body *{
-    visibility:hidden;
-  }
-
-  #receipt,
-  #receipt *{
-    visibility:visible;
-  }
-
-  #receipt{
-    position:absolute;
-    left:0;
-    top:0;
-    width:80mm;
-    box-shadow:none;
-  }
-
-  .modalButtons{
-    display:none;
-  }
-
-}
+/* GENERAL
