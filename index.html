@@ -1,55 +1,347 @@
-<section id="settings" class="page hidden">
-  <div class="panel">
-    <h2>Settings</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <h3>Shop Information</h3>
+  <title>LIQUOR KAUNG POS</title>
 
-    <div class="productForm">
-      <input id="shopName" placeholder="Shop Name">
-      <input id="shopType" placeholder="Shop Type / Store Name">
+  <link rel="stylesheet" href="style.css">
+</head>
 
-      <input id="shopAddress" placeholder="Shop Address">
-      <input id="posNo" placeholder="POS Number">
+<body>
 
-      <input id="cashierNo" placeholder="Cashier Number">
-      <input id="cashierName" placeholder="Cashier Name">
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="centerPage">
 
-      <select id="currency">
-        <option value="SGD">SGD</option>
-        <option value="USD">USD</option>
-        <option value="MMK">MMK</option>
-      </select>
-    </div>
+  <div class="loginCard">
 
-    <h3>Duplicate Receipt Information</h3>
+    <h1>🥃 LIQUOR KAUNG</h1>
+    <p>POS WEB APP</p>
 
-    <div class="productForm">
-      <input id="reprintedBy" placeholder="Reprinted By">
-      <input id="passportNo" placeholder="Passport Number">
+    <input
+      id="username"
+      type="text"
+      placeholder="Username"
+      autocomplete="username"
+    >
 
-      <input id="nationality" placeholder="Nationality">
-      <input id="flightCode" placeholder="Flight Code">
+    <input
+      id="password"
+      type="password"
+      placeholder="Password"
+      autocomplete="current-password"
+    >
 
-      <input id="flightNumber" placeholder="Flight Number">
-      <input id="lotteId" placeholder="Lotte Membership ID">
-    </div>
+    <button onclick="login()">LOGIN</button>
 
-    <button onclick="saveSettings()">SAVE SETTINGS</button>
+    <small>
+      Offline data is stored in this browser.
+    </small>
 
-    <hr>
-
-    <h3>Data</h3>
-
-    <button onclick="seedProducts()">Restore Demo Products</button>
-    <button onclick="exportData()">Backup Data</button>
-
-    <label class="fileBtn">
-      Restore Backup
-      <input type="file" onchange="importData(event)">
-    </label>
   </div>
-</section><div class="bigTotal">Total: <span id="total">0</span> Ks</div><div class="bigTotal">
-  Total: <span id="total">0</span>
-  <span id="currencyLabel">SGD</span><div class="bigTotal">Total: SGD <span id="total">0.00</span></div>
+
 </div>
-<input id="pprice" type="number" placeholder="Price (SGD)">
+
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+
+  <!-- HEADER -->
+  <header>
+
+    <div>
+      <b>🥃 LIQUOR KAUNG</b>
+      <span>OFFLINE POS</span>
+    </div>
+
+    <div>
+      <button class="light" onclick="logout()">
+        Logout
+      </button>
+    </div>
+
+  </header>
+
+
+  <!-- NAVIGATION -->
+  <nav>
+
+    <button
+      class="nav active"
+      onclick="showPage('sale',this)"
+    >
+      🛒 Sale
+    </button>
+
+    <button
+      class="nav"
+      onclick="showPage('products',this)"
+    >
+      📦 Products
+    </button>
+
+    <button
+      class="nav"
+      onclick="showPage('report',this)"
+    >
+      📊 Report
+    </button>
+
+    <button
+      class="nav"
+      onclick="showPage('settings',this)"
+    >
+      ⚙ Settings
+    </button>
+
+  </nav>
+
+
+  <main>
+
+    <!-- SALE PAGE -->
+    <section id="sale" class="page">
+
+      <div class="grid2">
+
+        <!-- NEW SALE -->
+        <div class="panel">
+
+          <h2>New Sale</h2>
+
+          <div class="row">
+
+            <input
+              id="scan"
+              placeholder="Scan / Enter Barcode or Product Code"
+              onkeydown="if(event.key==='Enter') addByCode()"
+            >
+
+            <button onclick="addByCode()">
+              ADD
+            </button>
+
+          </div>
+
+          <div id="cart"></div>
+
+        </div>
+
+
+        <!-- CHECKOUT -->
+        <div class="panel checkout">
+
+          <h2>Checkout</h2>
+
+          <div class="bigTotal">
+            Total:
+            <span id="total">0</span>
+            Ks
+          </div>
+
+
+          <label>Payment</label>
+
+          <select id="payment">
+
+            <option>CASH</option>
+            <option>KBZPAY</option>
+            <option>CARD</option>
+
+          </select>
+
+
+          <label class="check">
+
+            <input
+              id="duplicate"
+              type="checkbox"
+            >
+
+            Reprint as DUPLICATE
+
+          </label>
+
+
+          <button
+            class="pay"
+            onclick="checkout()"
+          >
+            PAYMENT / GENERATE RECEIPT
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- PRODUCTS PAGE -->
+    <section
+      id="products"
+      class="page hidden"
+    >
+
+      <div class="panel">
+
+        <h2>Product & Stock</h2>
+
+
+        <div class="productForm">
+
+          <input
+            id="pcode"
+            placeholder="Product Code"
+          >
+
+          <input
+            id="pbarcode"
+            placeholder="Barcode"
+          >
+
+          <input
+            id="pname"
+            placeholder="Product Name"
+          >
+
+          <input
+            id="pprice"
+            type="number"
+            placeholder="Price (Ks)"
+          >
+
+          <input
+            id="pstock"
+            type="number"
+            placeholder="Stock"
+          >
+
+          <button onclick="saveProduct()">
+            SAVE PRODUCT
+          </button>
+
+        </div>
+
+
+        <div id="productList"></div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- REPORT PAGE -->
+    <section
+      id="report"
+      class="page hidden"
+    >
+
+      <div class="panel">
+
+        <h2>Sales Report</h2>
+
+        <div id="reportBox"></div>
+
+        <h3>Recent Sales</h3>
+
+        <div id="salesList"></div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- SETTINGS PAGE -->
+    <section
+      id="settings"
+      class="page hidden"
+    >
+
+      <div class="panel">
+
+        <h2>Settings</h2>
+
+        <p>
+          <b>Shop:</b>
+          LIQUOR KAUNG
+        </p>
+
+        <p>
+          <b>Receipt:</b>
+          80mm / 3-inch thermal format
+        </p>
+
+
+        <button onclick="seedProducts()">
+          Restore Demo Products
+        </button>
+
+
+        <button onclick="exportData()">
+          Backup Data
+        </button>
+
+
+        <label class="fileBtn">
+
+          Restore Backup
+
+          <input
+            type="file"
+            onchange="importData(event)"
+          >
+
+        </label>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+
+<!-- RECEIPT MODAL -->
+<div
+  id="receiptModal"
+  class="modal hidden"
+>
+
+  <div class="modalBox">
+
+    <div class="modalActions">
+
+      <button onclick="printReceipt()">
+        🖨 PRINT
+      </button>
+
+      <button onclick="closeReceipt()">
+        CLOSE
+      </button>
+
+    </div>
+
+
+    <pre
+      id="receipt"
+      class="receipt"
+    ></pre>
+
+  </div>
+
+</div>
+
+
+
+<!-- JAVASCRIPT -->
+<script src="app.js"></script>
+
+</body>
+</html>
