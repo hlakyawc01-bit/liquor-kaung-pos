@@ -10,6 +10,7 @@ let editingProduct = null;
 const defaultSettings = {
   shopName: "LIQUOR KAUNG",
   shopType: "OFFLINE POS",
+  shopType: "OFFLINE POS",
   shopAddress: "Singapore",
   posNumber: "217",
   cashierNumber: "R03090",
@@ -1237,23 +1238,29 @@ function generateReceipt(sale){
 
     </div>
 
-
+      Tier Validity: 
+      ${escapeHtml(settings.memberTier)}
+      
     <br>
-
+    
+      Accumulated Net Spend:
+      ${escapeHtml(settings.memberTier)}
 
     <div>
-
+    
+      Issued Points:
       ${escapeHtml(settings.footerMessage)}
 
     </div>
 
+      ${escapeHtml(settings.footerMessage)}
 
     <br>
 
 
     <div class="receiptCenter">
 
-      Thank you for shopping with us
+      Thank you for shopping at Lotte Duty Free
 
       <br><br>
 
@@ -1483,6 +1490,7 @@ function saveSettings(){
 
   const ids = [
 
+    "shopName",
     "shopName",
     "shopType",
     "shopAddress",
