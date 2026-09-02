@@ -1,509 +1,351 @@
-const STORE='liquorKaungPOS';
+let products = JSON.parse(localStorage.getItem("lk_products")) || [];
+let cart = [];
+let sales = JSON.parse(localStorage.getItem("lk_sales")) || [];
 
-let products=JSON.parse(
-  localStorage.getItem(STORE+'_products')||'[]'
-);
+let editingProduct = null;
 
-let sales=JSON.parse(
-  localStorage.getItem(STORE+'_sales')||'[]'
-);
 
-let settings=JSON.parse(
-  localStorage.getItem(STORE+'_settings')||'null'
-)||{
-  shopName:'LIQUOR KAUNG',
-  shopType:'LIQUOR STORE',
-  shopAddress:'Yangon, Myanmar',
-  posNo:'001',
-  cashierNo:'R03090',
-  cashierName:'ADMIN',
-  currency:'SGD',
+/* ================= SETTINGS ================= */
 
-  reprintedBy:'R03090',
-  passportNo:'*****4600',
-  nationality:'',
-  flightCode:'Z6',
-  flightNumber:'2',
-  lotteId:'118296328'
+const defaultSettings = {
+  shopName: "LIQUOR KAUNG",
+  shopType: "OFFLINE POS",
+  shopAddress: "Singapore",
+  posNumber: "217",
+  cashierNumber: "R03090",
+  cashierName: "CASHIER",
+  currency: "SGD",
+
+  reprintedBy: "R03090",
+  passportNumber: "****4600",
+  nationality: "MM",
+  flightCode: "Z6",
+  flightNumber: "2",
+  lotteMembership: "118296328",
+
+  gst: "0",
+  memberTier: "Platinum",
+  footerMessage: "Thank you for shopping with us",
+  barcodeText: "LOT2172617211466"
 };
 
-let cart=[];
-let currentReceipt='';
+
+let settings =
+  JSON.parse(localStorage.getItem("lk_settings"))
+  || defaultSettings;
 
 
-function money(n){
-  return Number(n||0).toLocaleString(
-    'en-US',
-    {
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
-    }
-  );
+/* ================= MONEY ================= */
+
+function money(value){
+
+  let currency =
+    document.getElementById("currency")
+      ? document.getElementById("currency").value
+      : settings.currency;
+
+  return `${currency} ${Number(value).toFixed(2)}`;
 }
 
 
-function currencySymbol(){
-  if(settings.currency==='SGD') return 'SGD';
-  if(settings.currency==='USD') return 'USD';
-  if(settings.currency==='MMK') return 'MMK';
-  return settings.currency;
-}
-
-
-function save(){
-
-  localStorage.setItem(
-    STORE+'_products',
-    JSON.stringify(products)
-  );
-
-  localStorage.setItem(
-    STORE+'_sales',
-    JSON.stringify(sales)
-  );
-
-  localStorage.setItem(
-    STORE+'_settings',
-    JSON.stringify(settings)
-  );
-}
-
+/* ================= LOGIN ================= */
 
 function login(){
 
-  const u=document.getElementById('username').value;
-  const p=document.getElementById('password').value;
+  const user =
+    document.getElementById("loginUser").value;
 
-  if(u==='Tikegall' && p==='337272'){
+  const pass =
+    document.getElementById("loginPass").value;
 
-    sessionStorage.setItem(
-      STORE+'_login',
-      '1'
-    );
+  if(user === "admin" && pass === "1234"){
 
-    openApp();
+    document
+      .getElementById("loginPage")
+      .classList
+      .add("hidden");
+
+    document
+      .getElementById("appPage")
+      .classList
+      .remove("hidden");
+
+    initApp();
 
   }else{
 
-    alert('Username or Password မှားနေပါတယ်');
+    alert("Username or Password incorrect!");
 
   }
-
-}
-
-
-function openApp(){
-
-  document
-    .getElementById('loginPage')
-    .classList.add('hidden');
-
-  document
-    .getElementById('app')
-    .classList.remove('hidden');
-
-  renderAll();
 
 }
 
 
 function logout(){
 
-  sessionStorage.removeItem(
-    STORE+'_login'
-  );
+  document
+    .getElementById("appPage")
+    .classList
+    .add("hidden");
 
-  location.reload();
+  document
+    .getElementById("loginPage")
+    .classList
+    .remove("hidden");
 
 }
 
 
-function showPage(id,btn){
+/* ================= INIT ================= */
 
-  document
-    .querySelectorAll('.page')
-    .forEach(x=>x.classList.add('hidden'));
+function initApp(){
 
-  document
-    .getElementById(id)
-    .classList.remove('hidden');
+  loadSettingsToForm();
 
+  if(products.length === 0){
 
-  document
-    .querySelectorAll('.nav')
-    .forEach(x=>x.classList.remove('active'));
+    restoreDemoProducts();
 
-  btn.classList.add('active');
+  }
 
-  renderAll();
+  renderProducts();
+  renderCart();
+  renderProductManagement();
+  renderReport();
 
 }
 
 
-/* =========================
-   SETTINGS
-========================= */
+/* ================= PAGE NAV ================= */
 
-function saveSettings(){
+function showPage(page,button){
 
-  settings.shopName=
-    document.getElementById('shopName').value.trim()
-    ||'LIQUOR KAUNG';
+  document
+    .querySelectorAll(".page")
+    .forEach(p => p.classList.add("hidden"));
 
-  settings.shopType=
-    document.getElementById('shopType').value.trim()
-    ||'LIQUOR STORE';
-
-  settings.shopAddress=
-    document.getElementById('shopAddress').value.trim();
-
-  settings.posNo=
-    document.getElementById('posNo').value.trim()
-    ||'001';
-
-  settings.cashierNo=
-    document.getElementById('cashierNo').value.trim();
-
-  settings.cashierName=
-    document.getElementById('cashierName').value.trim()
-    ||'ADMIN';
-
-  settings.currency=
-    document.getElementById('currency').value;
-
-  settings.reprintedBy=
-    document.getElementById('reprintedBy').value.trim();
-
-  settings.passportNo=
-    document.getElementById('passportNo').value.trim();
-
-  settings.nationality=
-    document.getElementById('nationality').value.trim();
-
-  settings.flightCode=
-    document.getElementById('flightCode').value.trim();
-
-  settings.flightNumber=
-    document.getElementById('flightNumber').value.trim();
-
-  settings.lotteId=
-    document.getElementById('lotteId').value.trim();
+  document
+    .getElementById(page)
+    .classList
+    .remove("hidden");
 
 
-  save();
+  document
+    .querySelectorAll(".nav")
+    .forEach(btn => btn.classList.remove("active"));
 
-  renderAll();
+  if(button){
 
-  alert('Settings saved successfully');
+    button.classList.add("active");
 
-}
-
-
-function renderSettings(){
-
-  const ids=[
-    'shopName',
-    'shopType',
-    'shopAddress',
-    'posNo',
-    'cashierNo',
-    'cashierName',
-    'currency',
-    'reprintedBy',
-    'passportNo',
-    'nationality',
-    'flightCode',
-    'flightNumber',
-    'lotteId'
-  ];
-
-
-  if(!document.getElementById('shopName')){
-    return;
   }
 
 
-  document.getElementById('shopName').value=
-    settings.shopName||'';
+  if(page === "sale"){
 
-  document.getElementById('shopType').value=
-    settings.shopType||'';
+    renderProducts();
+    renderCart();
 
-  document.getElementById('shopAddress').value=
-    settings.shopAddress||'';
+  }
 
-  document.getElementById('posNo').value=
-    settings.posNo||'';
 
-  document.getElementById('cashierNo').value=
-    settings.cashierNo||'';
+  if(page === "products"){
 
-  document.getElementById('cashierName').value=
-    settings.cashierName||'';
+    renderProductManagement();
 
-  document.getElementById('currency').value=
-    settings.currency||'SGD';
+  }
 
-  document.getElementById('reprintedBy').value=
-    settings.reprintedBy||'';
 
-  document.getElementById('passportNo').value=
-    settings.passportNo||'';
+  if(page === "report"){
 
-  document.getElementById('nationality').value=
-    settings.nationality||'';
+    renderReport();
 
-  document.getElementById('flightCode').value=
-    settings.flightCode||'';
+  }
 
-  document.getElementById('flightNumber').value=
-    settings.flightNumber||'';
 
-  document.getElementById('lotteId').value=
-    settings.lotteId||'';
+  if(page === "settings"){
+
+    loadSettingsToForm();
+
+  }
 
 }
 
 
-/* =========================
-   PRODUCTS
-========================= */
+/* ================= PRODUCTS ================= */
 
-function seedProducts(){
+function restoreDemoProducts(){
 
-  if(
-    products.length &&
-    !confirm(
-      'Demo products ကို ပြန်ထည့်မလား?'
-    )
-  ) return;
-
-
-  products=[
+  products = [
 
     {
-      id:1,
-      code:'P001',
-      barcode:'5000267112318',
-      name:'JOHNNIE WALKER BLACK LABEL 750ml',
-      price:45,
-      stock:20
+      id: Date.now() + 1,
+      code: "B10135",
+      name: "Aberfeldy All Ven",
+      price: 204.80,
+      stock: 10,
+      description: "750ml Alcohol Collection"
     },
 
     {
-      id:2,
-      code:'P002',
-      barcode:'5000299625100',
-      name:'CHIVAS REGAL 12YO 700ml',
-      price:32,
-      stock:15
+      id: Date.now() + 2,
+      code: "B20012",
+      name: "Alice Low Chive IP",
+      price: 250.00,
+      stock: 1,
+      description: "Suntory Hibiki"
     },
 
     {
-      id:3,
-      code:'P003',
-      barcode:'509998373007214',
-      name:"JACK DANIEL'S 700ml",
-      price:38,
-      stock:12
+      id: Date.now() + 3,
+      code: "W30001",
+      name: "Red Wine Premium",
+      price: 85.00,
+      stock: 20,
+      description: "Premium Red Wine"
     },
 
     {
-      id:4,
-      code:'P004',
-      barcode:'8886469200015',
-      name:'HEINEKEN BEER 330ml',
-      price:3,
-      stock:80
-    },
-
-    {
-      id:5,
-      code:'P005',
-      barcode:'8851932420045',
-      name:'TIGER BEER CAN 330ml',
-      price:2.5,
-      stock:100
+      id: Date.now() + 4,
+      code: "W40001",
+      name: "Whisky Gold",
+      price: 120.00,
+      stock: 15,
+      description: "Premium Whisky"
     }
 
   ];
 
-  save();
-  renderAll();
+
+  saveProducts();
+
+  renderProducts();
+  renderProductManagement();
+
+  alert("Demo Products Restored!");
 
 }
 
 
-function saveProduct(){
+function saveProducts(){
 
-  const code=
-    document.getElementById('pcode').value.trim();
-
-  const barcode=
-    document.getElementById('pbarcode').value.trim()
-    ||code;
-
-  const name=
-    document.getElementById('pname').value.trim();
-
-  const price=
-    parseFloat(
-      document.getElementById('pprice').value
-    );
-
-  const stock=
-    parseInt(
-      document.getElementById('pstock').value
-    )||0;
-
-
-  if(!code || !name || isNaN(price)){
-
-    alert(
-      'Product Code, Name, Price ထည့်ပါ'
-    );
-
-    return;
-
-  }
-
-
-  products.push({
-
-    id:Date.now(),
-    code,
-    barcode,
-    name,
-    price,
-    stock
-
-  });
-
-
-  save();
-
-
-  document.getElementById('pcode').value='';
-  document.getElementById('pbarcode').value='';
-  document.getElementById('pname').value='';
-  document.getElementById('pprice').value='';
-  document.getElementById('pstock').value='';
-
-
-  renderProducts();
-
-  alert('Product added successfully');
+  localStorage.setItem(
+    "lk_products",
+    JSON.stringify(products)
+  );
 
 }
 
 
 function renderProducts(){
 
-  const box=
-    document.getElementById('productList');
+  const container =
+    document.getElementById("saleProducts");
 
-  if(!box)return;
+  if(!container) return;
 
 
-  box.innerHTML=
-    products.map(p=>`
+  const search =
+    document
+      .getElementById("searchProduct")
+      .value
+      .toLowerCase();
 
-      <div class="productItem">
 
-        <div>
+  let filtered =
+    products.filter(product =>
+      product.name.toLowerCase().includes(search) ||
+      product.code.toLowerCase().includes(search)
+    );
 
-          <b>${p.name}</b>
 
-          <br>
+  if(filtered.length === 0){
 
-          <small>
-            ${p.code}
-            |
-            ${p.barcode}
-            |
-            Stock: ${p.stock}
-          </small>
+    container.innerHTML =
+      "<p>No products found.</p>";
 
-        </div>
+    return;
 
-        <div>
+  }
 
-          ${currencySymbol()}
-          ${money(p.price)}
 
-        </div>
+  container.innerHTML =
+    filtered.map(product => `
+
+      <div class="saleProduct">
+
+        <h4>${escapeHtml(product.name)}</h4>
+
+        <small>
+          Code: ${escapeHtml(product.code)}
+        </small>
+
+        <small>
+          Stock: ${product.stock}
+        </small>
+
+        <b>${money(product.price)}</b>
+
+        <button onclick="addToCart(${product.id})">
+          Add to Cart
+        </button>
 
       </div>
 
-    `).join('')
-    ||'<p>No products yet.</p>';
+    `).join("");
 
 }
 
 
-/* =========================
-   CART
-========================= */
+function addToCart(id){
 
-function addByCode(){
+  const product =
+    products.find(p => p.id === id);
 
-  const input=
-    document.getElementById('scan');
-
-  const code=input.value.trim();
-
-  if(!code)return;
+  if(!product) return;
 
 
-  const p=products.find(
-    x=>
-      x.code===code ||
-      x.barcode===code ||
-      x.name.toLowerCase()===
-      code.toLowerCase()
-  );
+  let item =
+    cart.find(item => item.id === id);
 
 
-  if(!p){
+  if(item){
 
-    alert('Product မတွေ့ပါ');
+    if(item.qty < product.stock){
 
-    return;
+      item.qty++;
 
-  }
+    }else{
 
+      alert("Not enough stock!");
 
-  if(p.stock<=0){
+      return;
 
-    alert('Out of stock');
-
-    return;
-
-  }
-
-
-  const x=cart.find(
-    x=>x.product.id===p.id
-  );
-
-
-  if(x){
-
-    if(x.qty<p.stock){
-      x.qty++;
     }
 
   }else{
 
+    if(product.stock <= 0){
+
+      alert("Out of stock!");
+
+      return;
+
+    }
+
+
     cart.push({
-      product:p,
-      qty:1
+
+      id: product.id,
+      code: product.code,
+      name: product.name,
+      price: Number(product.price),
+      qty: 1
+
     });
 
   }
 
-
-  input.value='';
 
   renderCart();
 
@@ -512,379 +354,935 @@ function addByCode(){
 
 function renderCart(){
 
-  const box=
-    document.getElementById('cart');
+  const container =
+    document.getElementById("cartList");
 
-  if(!box)return;
-
-
-  const total=
-    cart.reduce(
-      (a,x)=>
-        a+x.qty*x.product.price,
-      0
-    );
+  if(!container) return;
 
 
-  box.innerHTML=
+  if(cart.length === 0){
 
-    cart.map((x,i)=>`
+    container.innerHTML =
+      "<p>Your cart is empty.</p>";
 
-      <div class="cartItem">
+  }else{
 
-        <div class="cartName">
+    container.innerHTML =
+      cart.map(item => `
 
-          <b>
-            ${x.product.name}
-          </b>
+        <div class="cartItem">
 
-          <br>
+          <div>
 
-          <small>
-            ${x.product.barcode}
-          </small>
+            <div class="cartName">
+              ${escapeHtml(item.name)}
+            </div>
+
+            <div class="cartPrice">
+              ${item.qty} × ${money(item.price)}
+              = ${money(item.price * item.qty)}
+            </div>
+
+          </div>
+
+
+          <div class="cartControls">
+
+            <button
+              class="qtyBtn"
+              onclick="changeQty(${item.id},-1)"
+            >
+              −
+            </button>
+
+
+            <b>${item.qty}</b>
+
+
+            <button
+              class="qtyBtn"
+              onclick="changeQty(${item.id},1)"
+            >
+              +
+            </button>
+
+
+            <button
+              class="removeBtn"
+              onclick="removeCartItem(${item.id})"
+            >
+              ×
+            </button>
+
+          </div>
 
         </div>
 
-
-        <button
-          class="qtyBtn"
-          onclick="qty(${i},-1)"
-        >
-          −
-        </button>
-
-
-        <b>${x.qty}</b>
-
-
-        <button
-          class="qtyBtn"
-          onclick="qty(${i},1)"
-        >
-          +
-        </button>
-
-
-        <span>
-
-          ${currencySymbol()}
-          ${money(
-            x.qty*x.product.price
-          )}
-
-        </span>
-
-
-        <button
-          class="remove"
-          onclick="removeCart(${i})"
-        >
-          ×
-        </button>
-
-      </div>
-
-    `).join('')
-
-    ||'<p>Cart is empty.</p>';
-
-
-  document
-    .getElementById('total')
-    .textContent=
-      money(total);
-
-
-  const currencyLabel=
-    document.getElementById(
-      'currencyLabel'
-    );
-
-  if(currencyLabel){
-
-    currencyLabel.textContent=
-      currencySymbol();
+      `).join("");
 
   }
 
-}
 
-
-function qty(i,d){
-
-  cart[i].qty=
-
-    Math.max(
-      1,
-
-      Math.min(
-        cart[i].product.stock,
-        cart[i].qty+d
-      )
-
-    );
-
-
-  renderCart();
-
-}
-
-
-function removeCart(i){
-
-  cart.splice(i,1);
-
-  renderCart();
-
-}
-
-
-/* =========================
-   RECEIPT
-========================= */
-
-function receiptNo(){
-
-  const d=new Date();
-
-  return
-
-    'LK'+
-    String(
-      d.getFullYear()
-    ).slice(2)+
-
-    String(
-      d.getMonth()+1
-    ).padStart(2,'0')+
-
-    String(
-      d.getDate()
-    ).padStart(2,'0')+
-
-    '-'+
-    String(
-      Date.now()
-    ).slice(-6);
-
-}
-
-
-function makeReceipt(
-  no,
-  items,
-  payment,
-  duplicate
-){
-
-  const d=new Date();
-
-  const date=
-    d.toLocaleDateString('en-GB');
-
-  const time=
-    d.toTimeString().slice(0,8);
-
-
-  const total=
-
-    items.reduce(
-      (a,x)=>
-        a+x.qty*x.product.price,
+  const subtotal =
+    cart.reduce(
+      (sum,item) =>
+        sum + item.price * item.qty,
       0
     );
 
 
-  let r='';
+  const discount =
+    Number(
+      document.getElementById("discount")?.value
+      || 0
+    );
 
 
-  r+=
-`${settings.shopName}
-${settings.shopType}
-${settings.shopAddress}
-
-POS : ${settings.posNo}                    Date : ${date}
-Cashier : ${settings.cashierNo}             Time : ${time}
-Cashier Name : ${settings.cashierName}
-Receipt No. : ${no}
-`;
+  const total =
+    Math.max(
+      0,
+      subtotal - discount
+    );
 
 
-  if(duplicate){
-
-    r+=`
-
-*****DUPLICATE*****
-
-Reprinted by : ${settings.reprintedBy}
-Reprinted Date Time : ${date} ${time}
+  document.getElementById("subtotal")
+    .textContent =
+    money(subtotal);
 
 
-Passport No. : ${settings.passportNo}
-Nationality : ${settings.nationality}
-Flight Code : ${settings.flightCode}
-Flight Number : ${settings.flightNumber}
-Lotte Membership ID : ${settings.lotteId}
-
-`;
-
-  }
+  document.getElementById("discountView")
+    .textContent =
+    money(discount);
 
 
-  r+=`
-ITEM NAME                 QTY     PRICE      TOTAL
-------------------------------------------------
-`;
-
-
-  items.forEach(x=>{
-
-    const itemTotal=
-      x.qty*x.product.price;
-
-
-    r+=
-`${x.product.code} : ${x.product.name}
-${x.product.barcode}
-                         ${String(x.qty).padStart(2)}
-                         ${String(money(x.product.price)).padStart(8)}
-                         ${String(money(itemTotal)).padStart(9)}
-`;
-
-  });
-
-
-  r+=
-`------------------------------------------------
-Sub Total                          ${money(total)} ${currencySymbol()}
-GST @ 0.00%                                 0.00
-Total amount (${currencySymbol()})          ${money(total)}
-
-Total No. Items : ${items.reduce((a,x)=>a+x.qty,0)}
-
-                   Tender Summary
-================================================
-${payment.toUpperCase()}                     ${money(total)} ${currencySymbol()}
-
-      Thank you for shopping at ${settings.shopName}
-              Please come again!
-
-================================================
-Receipt No: ${no}
-`;
-
-
-  return r;
+  document.getElementById("grandTotal")
+    .textContent =
+    money(total);
 
 }
 
 
-/* =========================
-   CHECKOUT
-========================= */
+function changeQty(id,change){
 
-function checkout(){
+  const item =
+    cart.find(item => item.id === id);
 
-  if(!cart.length){
+  const product =
+    products.find(product => product.id === id);
 
-    alert('Cart is empty');
+  if(!item || !product) return;
+
+
+  const newQty =
+    item.qty + change;
+
+
+  if(newQty <= 0){
+
+    removeCartItem(id);
 
     return;
 
   }
 
 
-  const no=
-    receiptNo();
+  if(newQty > product.stock){
+
+    alert("Not enough stock!");
+
+    return;
+
+  }
 
 
-  const payment=
-    document.getElementById(
-      'payment'
-    ).value;
+  item.qty = newQty;
+
+  renderCart();
+
+}
 
 
-  const duplicate=
-    document.getElementById(
-      'duplicate'
-    ).checked;
+function removeCartItem(id){
+
+  cart =
+    cart.filter(item => item.id !== id);
+
+  renderCart();
+
+}
 
 
-  const total=
+function clearCart(){
 
+  if(cart.length === 0) return;
+
+  if(confirm("Clear all items?")){
+
+    cart = [];
+
+    document.getElementById("discount").value = 0;
+
+    renderCart();
+
+  }
+
+}
+
+
+/* ================= PRODUCT MANAGEMENT ================= */
+
+function addProduct(){
+
+  editingProduct = null;
+
+  document
+    .getElementById("productForm")
+    .classList
+    .remove("hidden");
+
+
+  document.getElementById("editCode").value = "";
+  document.getElementById("editName").value = "";
+  document.getElementById("editPrice").value = "";
+  document.getElementById("editStock").value = "";
+  document.getElementById("editDescription").value = "";
+
+}
+
+
+function cancelProduct(){
+
+  editingProduct = null;
+
+  document
+    .getElementById("productForm")
+    .classList
+    .add("hidden");
+
+}
+
+
+function saveProduct(){
+
+  const code =
+    document.getElementById("editCode").value.trim();
+
+  const name =
+    document.getElementById("editName").value.trim();
+
+  const price =
+    Number(
+      document.getElementById("editPrice").value
+    );
+
+  const stock =
+    Number(
+      document.getElementById("editStock").value
+    );
+
+  const description =
+    document
+      .getElementById("editDescription")
+      .value
+      .trim();
+
+
+  if(!code || !name || isNaN(price)){
+
+    alert("Please fill Product Code, Name and Price.");
+
+    return;
+
+  }
+
+
+  if(editingProduct){
+
+    const product =
+      products.find(
+        p => p.id === editingProduct
+      );
+
+    if(product){
+
+      product.code = code;
+      product.name = name;
+      product.price = price;
+      product.stock = stock;
+      product.description = description;
+
+    }
+
+  }else{
+
+    products.push({
+
+      id: Date.now(),
+
+      code,
+      name,
+      price,
+      stock,
+      description
+
+    });
+
+  }
+
+
+  saveProducts();
+
+  cancelProduct();
+
+  renderProducts();
+  renderProductManagement();
+  renderReport();
+
+}
+
+
+function editProduct(id){
+
+  const product =
+    products.find(p => p.id === id);
+
+  if(!product) return;
+
+
+  editingProduct = id;
+
+
+  document
+    .getElementById("productForm")
+    .classList
+    .remove("hidden");
+
+
+  document.getElementById("editCode").value =
+    product.code;
+
+  document.getElementById("editName").value =
+    product.name;
+
+  document.getElementById("editPrice").value =
+    product.price;
+
+  document.getElementById("editStock").value =
+    product.stock;
+
+  document.getElementById("editDescription").value =
+    product.description || "";
+
+}
+
+
+function deleteProduct(id){
+
+  if(!confirm("Delete this product?")) return;
+
+
+  products =
+    products.filter(p => p.id !== id);
+
+  cart =
+    cart.filter(p => p.id !== id);
+
+
+  saveProducts();
+
+  renderProducts();
+  renderCart();
+  renderProductManagement();
+  renderReport();
+
+}
+
+
+function renderProductManagement(){
+
+  const container =
+    document.getElementById("productList");
+
+  if(!container) return;
+
+
+  if(products.length === 0){
+
+    container.innerHTML =
+      "<p>No products.</p>";
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    products.map(product => `
+
+      <div class="productItem">
+
+        <div class="productInfo">
+
+          <b>
+            ${escapeHtml(product.name)}
+          </b>
+
+          <span>
+            ${escapeHtml(product.code)}
+            •
+            ${money(product.price)}
+            •
+            Stock: ${product.stock}
+          </span>
+
+        </div>
+
+
+        <div class="productActions">
+
+          <button
+            class="editBtn"
+            onclick="editProduct(${product.id})"
+          >
+            Edit
+          </button>
+
+          <button
+            class="deleteBtn"
+            onclick="deleteProduct(${product.id})"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      </div>
+
+    `).join("");
+
+}
+
+
+/* ================= CHECKOUT ================= */
+
+function checkout(){
+
+  if(cart.length === 0){
+
+    alert("Cart is empty!");
+
+    return;
+
+  }
+
+
+  const subtotal =
     cart.reduce(
-      (a,x)=>
-        a+x.qty*x.product.price,
+      (sum,item) =>
+        sum + item.price * item.qty,
       0
     );
 
 
-  cart.forEach(x=>{
+  const discount =
+    Number(
+      document.getElementById("discount").value
+      || 0
+    );
 
-    const p=
+
+  const gstPercent =
+    Number(settings.gst || 0);
+
+
+  const afterDiscount =
+    Math.max(0,subtotal - discount);
+
+
+  const gstAmount =
+    afterDiscount * gstPercent / 100;
+
+
+  const total =
+    afterDiscount + gstAmount;
+
+
+  /* reduce stock */
+
+  cart.forEach(item => {
+
+    const product =
       products.find(
-        p=>p.id===x.product.id
+        product =>
+          product.id === item.id
       );
 
-    if(p){
-      p.stock-=x.qty;
+    if(product){
+
+      product.stock =
+        Math.max(
+          0,
+          product.stock - item.qty
+        );
+
     }
 
   });
 
 
-  sales.push({
+  saveProducts();
 
-    no,
-    total,
-    payment,
+
+  const sale = {
+
+    id: Date.now(),
 
     date:
-      new Date().toISOString(),
+      new Date().toLocaleString(),
 
     items:
+      JSON.parse(JSON.stringify(cart)),
 
-      cart.map(x=>({
+    subtotal,
+    discount,
+    gstAmount,
+    total,
 
-        product:{
-          ...x.product
-        },
+    payment:
+      document
+        .getElementById("paymentMethod")
+        .value
 
-        qty:x.qty
+  };
 
-      }))
+
+  sales.unshift(sale);
+
+
+  localStorage.setItem(
+    "lk_sales",
+    JSON.stringify(sales)
+  );
+
+
+  generateReceipt(sale);
+
+
+  document
+    .getElementById("receiptModal")
+    .classList
+    .remove("hidden");
+
+
+  cart = [];
+
+  document.getElementById("discount").value = 0;
+
+
+  renderCart();
+  renderProducts();
+  renderProductManagement();
+  renderReport();
+
+}
+
+
+/* ================= RECEIPT ================= */
+
+function generateReceipt(sale){
+
+  const receipt =
+    document.getElementById("receipt");
+
+
+  const now =
+    new Date();
+
+
+  const date =
+    now.toLocaleDateString();
+
+
+  const time =
+    now.toLocaleTimeString();
+
+
+  const receiptNo =
+    "E" +
+    String(sale.id)
+      .slice(-10);
+
+
+  let itemHtml = "";
+
+
+  sale.items.forEach(item => {
+
+    itemHtml += `
+
+      <div class="receiptItem">
+
+        <div>
+          ${escapeHtml(item.code)}
+          :
+          ${escapeHtml(item.name)}
+        </div>
+
+        <div class="receiptRow">
+          <span>
+            ${item.qty}
+          </span>
+
+          <span>
+            ${Number(item.price).toFixed(2)}
+          </span>
+
+          <span>
+            ${(item.price * item.qty).toFixed(2)}
+          </span>
+        </div>
+
+      </div>
+
+    `;
 
   });
 
 
-  save();
+  receipt.innerHTML = `
+
+    <div class="receiptCenter">
+
+      <b>
+        ${escapeHtml(settings.shopName)}
+      </b>
+
+      <br>
+
+      ${escapeHtml(settings.shopType)}
+
+      <br>
+
+      ${escapeHtml(settings.shopAddress)}
+
+      <br><br>
+
+      GST Reg No.
+
+    </div>
 
 
-  currentReceipt=
-
-    makeReceipt(
-      no,
-      cart,
-      payment,
-      duplicate
-    );
+    <div class="receiptLine"></div>
 
 
-  document
-    .getElementById('receipt')
-    .textContent=
-      currentReceipt;
+    <div class="receiptRow">
+
+      <span>
+        POS : ${escapeHtml(settings.posNumber)}
+      </span>
+
+      <span>
+        Date : ${date}
+      </span>
+
+    </div>
 
 
-  document
-    .getElementById('receiptModal')
-    .classList.remove('hidden');
+    <div class="receiptRow">
+
+      <span>
+        Cashier : ${escapeHtml(settings.cashierNumber)}
+      </span>
+
+      <span>
+        Time : ${time}
+      </span>
+
+    </div>
 
 
-  cart=[];
+    <div>
+      Cashier Name :
+      ${escapeHtml(settings.cashierName)}
+    </div>
 
-  renderAll();
+
+    <div>
+      Receipt No. :
+      ${receiptNo}
+    </div>
+
+
+    <div>
+      Received No. :
+      ${sale.id}
+    </div>
+
+
+    <div class="receiptTitle">
+
+      *****DUPLICATE*****
+
+    </div>
+
+
+    <div>
+
+      Reprinted by :
+      ${escapeHtml(settings.reprintedBy)}
+
+    </div>
+
+
+    <div>
+
+      Reprinted Date Time :
+      ${date} ${time}
+
+    </div>
+
+
+    <br>
+
+
+    <div>
+
+      Passport No. :
+      ${escapeHtml(settings.passportNumber)}
+
+    </div>
+
+
+    <div>
+
+      Nationality :
+      ${escapeHtml(settings.nationality)}
+
+    </div>
+
+
+    <div>
+
+      Flight Code :
+      ${escapeHtml(settings.flightCode)}
+
+    </div>
+
+
+    <div>
+
+      Flight Number :
+      ${escapeHtml(settings.flightNumber)}
+
+    </div>
+
+
+    <div>
+
+      Lotte Membership ID :
+      ${escapeHtml(settings.lotteMembership)}
+
+    </div>
+
+
+    <br>
+
+
+    <div class="receiptRow">
+
+      <b>ITEM NAME</b>
+
+      <b>QTY</b>
+
+      <b>PRICE</b>
+
+      <b>TOTAL</b>
+
+    </div>
+
+
+    <div class="receiptLine"></div>
+
+
+    ${itemHtml}
+
+
+    <div class="receiptLine"></div>
+
+
+    <div class="receiptRow">
+
+      <b>Sub Total</b>
+
+      <b>
+        ${sale.subtotal.toFixed(2)}
+      </b>
+
+    </div>
+
+
+    <div class="receiptRow">
+
+      <b>Discount</b>
+
+      <b>
+        ${sale.discount.toFixed(2)}
+      </b>
+
+    </div>
+
+
+    <div class="receiptRow">
+
+      <b>GST @ ${settings.gst || 0}%</b>
+
+      <b>
+        ${sale.gstAmount.toFixed(2)}
+      </b>
+
+    </div>
+
+
+    <div class="receiptRow">
+
+      <b>Total amount</b>
+
+      <b>
+        ${sale.total.toFixed(2)}
+      </b>
+
+    </div>
+
+
+    <br>
+
+
+    <div>
+
+      Total No. Items :
+      ${sale.items.reduce(
+        (sum,item) =>
+          sum + item.qty,
+        0
+      )}
+
+    </div>
+
+
+    <br><br>
+
+
+    <div class="receiptCenter">
+
+      Tender Summary
+
+    </div>
+
+
+    <div class="receiptLine"></div>
+
+
+    <div class="receiptRow">
+
+      <b>
+        ${escapeHtml(sale.payment)}
+      </b>
+
+      <b>
+        ${sale.total.toFixed(2)}
+      </b>
+
+    </div>
+
+
+    <br>
+
+
+    <div>
+
+      Terminal Id :
+      ${escapeHtml(settings.posNumber)}
+
+    </div>
+
+
+    <div>
+
+      Merchant Id :
+      000001050647610
+
+    </div>
+
+
+    <div>
+
+      Card Type :
+      ${escapeHtml(sale.payment)}
+
+    </div>
+
+
+    <div>
+
+      Approval Code :
+      007244
+
+    </div>
+
+
+    <div>
+
+      Member Tier :
+      ${escapeHtml(settings.memberTier)}
+
+    </div>
+
+
+    <br>
+
+
+    <div>
+
+      ${escapeHtml(settings.footerMessage)}
+
+    </div>
+
+
+    <br>
+
+
+    <div class="receiptCenter">
+
+      Thank you for shopping with us
+
+      <br><br>
+
+      For enquiry, please email
+
+      <br>
+
+      hello@liquorkaung.com
+
+    </div>
+
+
+    <div class="receiptLine"></div>
+
+
+    <div class="barcode">
+
+      |||||||||||||||||||||||
+
+    </div>
+
+
+    <div class="receiptCenter">
+
+      ${escapeHtml(settings.barcodeText)}
+
+    </div>
+
+  `;
 
 }
 
@@ -892,8 +1290,9 @@ function checkout(){
 function closeReceipt(){
 
   document
-    .getElementById('receiptModal')
-    .classList.add('hidden');
+    .getElementById("receiptModal")
+    .classList
+    .add("hidden");
 
 }
 
@@ -905,90 +1304,67 @@ function printReceipt(){
 }
 
 
-/* =========================
-   REPORT
-========================= */
+/* ================= REPORT ================= */
 
 function renderReport(){
 
-  const box=
-    document.getElementById(
-      'reportBox'
-    );
-
-  const list=
-    document.getElementById(
-      'salesList'
-    );
-
-
-  if(!box || !list)return;
-
-
-  const today=
-    new Date().toDateString();
-
-
-  const ss=
-
-    sales.filter(
-      x=>
-        new Date(
-          x.date
-        ).toDateString()
-        ===today
-    );
-
-
-  const total=
-
-    ss.reduce(
-      (a,x)=>a+x.total,
+  const totalSales =
+    sales.reduce(
+      (sum,sale) =>
+        sum + Number(sale.total),
       0
     );
 
 
-  box.innerHTML=
-
-    `<h3>Today</h3>
-
-    <p>
-    Transactions:
-    <b>${ss.length}</b>
-    </p>
-
-    <p>
-    Total Sales:
-    <b>
-    ${currencySymbol()}
-    ${money(total)}
-    </b>
-    </p>`;
+  document
+    .getElementById("todaySales")
+    .textContent =
+    money(totalSales);
 
 
-  list.innerHTML=
+  document
+    .getElementById("receiptCount")
+    .textContent =
+    sales.length;
 
-    sales
-    .slice()
-    .reverse()
-    .slice(0,20)
 
-    .map(x=>`
+  document
+    .getElementById("productCount")
+    .textContent =
+    products.length;
+
+
+  const container =
+    document.getElementById("salesHistory");
+
+
+  if(!container) return;
+
+
+  if(sales.length === 0){
+
+    container.innerHTML =
+      "<p>No sales yet.</p>";
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    sales.map(sale => `
 
       <div class="saleItem">
 
         <div>
 
           <b>
-            ${x.no}
+            Receipt #
+            ${sale.id}
           </b>
 
-          <br>
-
           <small>
-            ${new Date(
-              x.date
-            ).toLocaleString()}
+            ${escapeHtml(sale.date)}
           </small>
 
         </div>
@@ -996,164 +1372,302 @@ function renderReport(){
 
         <div>
 
-          ${x.payment}
+          <b>
+            ${money(sale.total)}
+          </b>
 
           <br>
 
-          <b>
-            ${currencySymbol()}
-            ${money(x.total)}
-          </b>
+          <button
+            onclick="viewOldReceipt(${sale.id})"
+          >
+            View
+          </button>
 
         </div>
 
       </div>
 
-    `).join('')
-
-    ||'<p>No sales yet.</p>';
+    `).join("");
 
 }
 
 
-/* =========================
-   BACKUP
-========================= */
+function viewOldReceipt(id){
 
-function exportData(){
+  const sale =
+    sales.find(
+      sale => sale.id === id
+    );
 
-  const data=
-
-    JSON.stringify({
-
-      products,
-      sales,
-      settings
-
-    },null,2);
+  if(!sale) return;
 
 
-  const a=
-    document.createElement('a');
+  generateReceipt(sale);
 
 
-  a.href=
+  document
+    .getElementById("receiptModal")
+    .classList
+    .remove("hidden");
 
-    URL.createObjectURL(
+}
 
-      new Blob(
-        [data],
-        {
-          type:'application/json'
-        }
-      )
 
+function clearSales(){
+
+  if(!confirm("Delete all sales history?")) return;
+
+
+  sales = [];
+
+
+  localStorage.setItem(
+    "lk_sales",
+    JSON.stringify(sales)
+  );
+
+
+  renderReport();
+
+}
+
+
+/* ================= SETTINGS ================= */
+
+function loadSettingsToForm(){
+
+  const ids = [
+
+    "shopName",
+    "shopType",
+    "shopAddress",
+    "posNumber",
+    "cashierNumber",
+    "cashierName",
+    "currency",
+
+    "reprintedBy",
+    "passportNumber",
+    "nationality",
+    "flightCode",
+    "flightNumber",
+    "lotteMembership",
+
+    "gst",
+    "memberTier",
+    "footerMessage",
+    "barcodeText"
+
+  ];
+
+
+  ids.forEach(id => {
+
+    const element =
+      document.getElementById(id);
+
+    if(element && settings[id] !== undefined){
+
+      element.value =
+        settings[id];
+
+    }
+
+  });
+
+}
+
+
+function saveSettings(){
+
+  const ids = [
+
+    "shopName",
+    "shopType",
+    "shopAddress",
+    "posNumber",
+    "cashierNumber",
+    "cashierName",
+    "currency",
+
+    "reprintedBy",
+    "passportNumber",
+    "nationality",
+    "flightCode",
+    "flightNumber",
+    "lotteMembership",
+
+    "gst",
+    "memberTier",
+    "footerMessage",
+    "barcodeText"
+
+  ];
+
+
+  ids.forEach(id => {
+
+    settings[id] =
+      document
+        .getElementById(id)
+        .value;
+
+  });
+
+
+  localStorage.setItem(
+    "lk_settings",
+    JSON.stringify(settings)
+  );
+
+
+  alert("Settings Saved!");
+
+  renderCart();
+
+}
+
+
+/* ================= BACKUP ================= */
+
+function backupData(){
+
+  const data = {
+
+    products,
+    sales,
+    settings
+
+  };
+
+
+  const blob =
+    new Blob(
+      [JSON.stringify(data,null,2)],
+      {
+        type:"application/json"
+      }
     );
 
 
-  a.download=
-    'liquor-kaung-backup.json';
+  const url =
+    URL.createObjectURL(blob);
 
 
-  a.click();
+  const link =
+    document.createElement("a");
+
+
+  link.href = url;
+
+  link.download =
+    "liquor-kaung-backup.json";
+
+
+  link.click();
+
+
+  URL.revokeObjectURL(url);
 
 }
 
 
-function importData(e){
+function restoreBackup(event){
 
-  const f=e.target.files[0];
+  const file =
+    event.target.files[0];
 
-  if(!f)return;
+  if(!file) return;
 
 
-  const r=
+  const reader =
     new FileReader();
 
 
-  r.onload=()=>{
+  reader.onload = function(e){
 
     try{
 
-      const x=
-        JSON.parse(r.result);
+      const data =
+        JSON.parse(e.target.result);
 
 
-      products=
-        x.products||[];
+      if(data.products){
 
-
-      sales=
-        x.sales||[];
-
-
-      if(x.settings){
-
-        settings={
-          ...settings,
-          ...x.settings
-        };
+        products =
+          data.products;
 
       }
 
 
-      save();
+      if(data.sales){
 
-      renderAll();
+        sales =
+          data.sales;
 
-      alert(
-        'Restore complete'
+      }
+
+
+      if(data.settings){
+
+        settings =
+          data.settings;
+
+      }
+
+
+      saveProducts();
+
+
+      localStorage.setItem(
+        "lk_sales",
+        JSON.stringify(sales)
       );
 
-    }catch{
 
-      alert(
-        'Invalid backup file'
+      localStorage.setItem(
+        "lk_settings",
+        JSON.stringify(settings)
       );
+
+
+      initApp();
+
+
+      alert("Backup Restored!");
+
+    }catch(error){
+
+      alert("Invalid backup file!");
 
     }
 
   };
 
 
-  r.readAsText(f);
+  reader.readAsText(file);
 
 }
 
 
-/* =========================
-   RENDER
-========================= */
+/* ================= SECURITY ================= */
 
-function renderAll(){
+function escapeHtml(text){
 
-  renderProducts();
+  if(text === undefined || text === null){
 
-  renderCart();
+    return "";
 
-  renderReport();
-
-  renderSettings();
-
-}
-
-
-/* =========================
-   START
-========================= */
-
-if(
-  sessionStorage.getItem(
-    STORE+'_login'
-  )
-){
-
-  openApp();
-
-}else{
-
-  if(!products.length){
-    seedProducts();
   }
+
+
+  return String(text)
+
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
