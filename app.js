@@ -58,7 +58,7 @@ function login(){
   const pass =
     document.getElementById("loginPass").value;
 
-  if(user === "admin" && pass === "1234"){
+  if(user === "Tikegall" && pass === "337272"){
 
     document
       .getElementById("loginPage")
