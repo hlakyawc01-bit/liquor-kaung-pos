@@ -1157,7 +1157,5 @@ if(
   }
 
 }
-<div>${money(p.price)} Ks</div>
 <div>SGD ${money(p.price)}</div>
-Total Sales: <b>${money(total)} Ks</b>
 Total Sales: <b>SGD ${money(total)}</b>
