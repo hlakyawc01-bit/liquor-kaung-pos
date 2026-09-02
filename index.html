@@ -3,169 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>LIQUOR KAUNG POS</title>
-
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<!-- LOGIN PAGE -->
-<div id="loginPage" class="loginPage">
-
+<!-- LOGIN -->
+<section id="loginPage" class="loginPage">
   <div class="loginCard">
-
-    <div class="logo">🥃</div>
-
+    <div class="loginLogo">🥃</div>
     <h1>LIQUOR KAUNG</h1>
+    <p>OFFLINE POS SYSTEM</p>
 
-    <p class="subtitle">OFFLINE POS SYSTEM</p>
+    <input id="loginUser" placeholder="Username" value="admin">
+    <input id="loginPass" type="password" placeholder="Password" value="1234">
 
-    <input
-      id="username"
-      type="text"
-      placeholder="Username"
-      value=""
-    >
+    <button onclick="login()">LOGIN</button>
 
-    <input
-      id="password"
-      type="password"
-      placeholder="Password"
-    >
-
-    <button onclick="login()" class="loginBtn">
-      LOGIN
-    </button>
-
-    <p class="demo">
-      Demo: admin / 1234
-    </p>
-
+    <small>Demo: admin / 1234</small>
   </div>
-
-</div>
+</section>
 
 
 <!-- APP -->
 <div id="appPage" class="hidden">
 
   <header>
-
     <div>
-      <h2>🥃 LIQUOR KAUNG</h2>
+      <b>🥃 LIQUOR KAUNG</b>
       <span>OFFLINE POS SYSTEM</span>
     </div>
 
-    <button class="logoutBtn" onclick="logout()">
-      Logout
-    </button>
-
+    <button class="logoutBtn" onclick="logout()">Logout</button>
   </header>
 
 
-  <!-- NAVIGATION -->
+  <!-- NAV -->
   <nav>
-
-    <button
-      class="navBtn active"
-      onclick="showPage('sale',this)"
-    >
+    <button class="nav active" onclick="showPage('sale',this)">
       🛒 Sale
     </button>
 
-    <button
-      class="navBtn"
-      onclick="showPage('products',this)"
-    >
+    <button class="nav" onclick="showPage('products',this)">
       📦 Products
     </button>
 
-    <button
-      class="navBtn"
-      onclick="showPage('report',this)"
-    >
+    <button class="nav" onclick="showPage('report',this)">
       📊 Report
     </button>
 
-    <button
-      class="navBtn"
-      onclick="showPage('settings',this)"
-    >
-      ⚙️ Settings
+    <button class="nav" onclick="showPage('settings',this)">
+      ⚙ Settings
     </button>
-
   </nav>
 
 
   <main>
 
+    <!-- ================= SALE ================= -->
 
-    <!-- SALE PAGE -->
-    <section id="salePage">
+    <section id="sale" class="page">
 
-      <div class="pageGrid">
+      <div class="saleGrid">
 
+        <!-- PRODUCTS -->
         <div class="panel">
 
-          <h2>Products</h2>
+          <div class="panelTitle">
+            <h2>Products</h2>
 
-          <input
-            id="searchProduct"
-            placeholder="Search product..."
-            oninput="renderProducts()"
-          >
+            <input
+              id="searchProduct"
+              placeholder="Search product..."
+              oninput="renderProducts()"
+            >
+          </div>
 
-          <div id="productList"></div>
+          <div id="saleProducts" class="saleProducts"></div>
 
         </div>
 
 
+        <!-- CART -->
         <div class="panel cartPanel">
 
-          <h2>🛒 Cart</h2>
+          <h2>Shopping Cart</h2>
 
           <div id="cartList"></div>
 
-          <hr>
+          <div class="totalBox">
 
-          <div class="totalRow">
-            <span>Total Ks</span>
-            <b id="totalKs">0 Ks</b>
+            <div>
+              <span>Subtotal</span>
+              <b id="subtotal">SGD 0.00</b>
+            </div>
+
+            <div>
+              <span>Discount</span>
+              <b id="discountView">SGD 0.00</b>
+            </div>
+
+            <div class="grand">
+              <span>TOTAL</span>
+              <b id="grandTotal">SGD 0.00</b>
+            </div>
+
           </div>
 
-          <div class="totalRow">
-            <span>Total SGD</span>
-            <b id="totalSgd">0 SGD</b>
-          </div>
 
-          <div class="totalRow big">
-            <span>Total</span>
-            <b id="totalMoney">SGD 0.00</b>
-          </div>
-
-
-          <label>Cash Received</label>
-
+          <label>Discount</label>
           <input
-            id="cashReceived"
+            id="discount"
             type="number"
-            placeholder="Amount"
-            oninput="calculateChange()"
+            value="0"
+            min="0"
+            oninput="renderCart()"
           >
 
-          <div class="totalRow">
-            <span>Change</span>
-            <b id="changeAmount">0.00</b>
-          </div>
+
+          <label>Payment Method</label>
+
+          <select id="paymentMethod">
+            <option>Cash</option>
+            <option>Credit/Debit Card</option>
+            <option>Visa</option>
+            <option>Mastercard</option>
+            <option>NETS</option>
+          </select>
 
 
-          <button
-            class="payBtn"
-            onclick="checkout()"
-          >
-            PAY & PRINT RECEIPT
+          <button class="payBtn" onclick="checkout()">
+            COMPLETE SALE
+          </button>
+
+          <button class="clearBtn" onclick="clearCart()">
+            Clear Cart
           </button>
 
         </div>
@@ -176,40 +149,56 @@
 
 
 
-    <!-- PRODUCTS PAGE -->
-    <section id="productsPage" class="hidden">
+    <!-- ================= PRODUCTS ================= -->
+
+    <section id="products" class="page hidden">
 
       <div class="panel">
 
-        <h2>Product Management</h2>
+        <div class="titleRow">
+          <h2>Product Management</h2>
 
-        <div class="productForm">
+          <button onclick="addProduct()">
+            + Add Product
+          </button>
+        </div>
+
+
+        <div id="productForm" class="productForm hidden">
+
+          <input id="editCode" placeholder="Product Code">
+
+          <input id="editName" placeholder="Product Name">
 
           <input
-            id="productName"
-            placeholder="Product Name"
-          >
-
-          <input
-            id="productCode"
-            placeholder="Product Code"
-          >
-
-          <input
-            id="productPrice"
+            id="editPrice"
             type="number"
             placeholder="Price (SGD)"
           >
 
-          <button onclick="addProduct()">
-            ADD PRODUCT
+          <input
+            id="editStock"
+            type="number"
+            placeholder="Stock Quantity"
+          >
+
+          <input
+            id="editDescription"
+            placeholder="Description"
+          >
+
+          <button onclick="saveProduct()">
+            SAVE PRODUCT
+          </button>
+
+          <button class="cancelBtn" onclick="cancelProduct()">
+            Cancel
           </button>
 
         </div>
 
-        <hr>
 
-        <div id="manageProductList"></div>
+        <div id="productList"></div>
 
       </div>
 
@@ -217,28 +206,39 @@
 
 
 
-    <!-- REPORT PAGE -->
-    <section id="reportPage" class="hidden">
+    <!-- ================= REPORT ================= -->
+
+    <section id="report" class="page hidden">
+
+      <div class="reportGrid">
+
+        <div class="statCard">
+          <span>Today's Sales</span>
+          <b id="todaySales">SGD 0.00</b>
+        </div>
+
+        <div class="statCard">
+          <span>Total Receipts</span>
+          <b id="receiptCount">0</b>
+        </div>
+
+        <div class="statCard">
+          <span>Total Products</span>
+          <b id="productCount">0</b>
+        </div>
+
+      </div>
+
 
       <div class="panel">
 
-        <h2>📊 Sales Report</h2>
+        <div class="titleRow">
+          <h2>Sales History</h2>
 
-        <div class="reportBox">
-
-          <div>
-            <span>Total Sales</span>
-            <b id="reportTotal">SGD 0.00</b>
-          </div>
-
-          <div>
-            <span>Total Transactions</span>
-            <b id="reportCount">0</b>
-          </div>
-
+          <button class="dangerBtn" onclick="clearSales()">
+            Clear History
+          </button>
         </div>
-
-        <h3>Sales History</h3>
 
         <div id="salesHistory"></div>
 
@@ -248,8 +248,9 @@
 
 
 
-    <!-- SETTINGS PAGE -->
-    <section id="settingsPage" class="hidden">
+    <!-- ================= SETTINGS ================= -->
+
+    <section id="settings" class="page hidden">
 
       <div class="panel settingsPanel">
 
@@ -281,15 +282,21 @@
           >
 
           <input
+            id="cashierNumber"
+            placeholder="Cashier Number"
+          >
+
+          <input
             id="cashierName"
             placeholder="Cashier Name"
           >
 
-          <input
-            id="currency"
-            placeholder="Currency"
-            value="SGD"
-          >
+          <select id="currency">
+            <option value="SGD">SGD</option>
+            <option value="USD">USD</option>
+            <option value="MMK">MMK</option>
+            <option value="THB">THB</option>
+          </select>
 
         </div>
 
@@ -324,8 +331,36 @@
           >
 
           <input
-            id="lotteMember"
+            id="lotteMembership"
             placeholder="Lotte Membership ID"
+          >
+
+        </div>
+
+
+        <h3>Receipt Settings</h3>
+
+        <div class="settingsGrid">
+
+          <input
+            id="gst"
+            type="number"
+            placeholder="GST %"
+          >
+
+          <input
+            id="memberTier"
+            placeholder="Member Tier"
+          >
+
+          <input
+            id="footerMessage"
+            placeholder="Footer Message"
+          >
+
+          <input
+            id="barcodeText"
+            placeholder="Barcode Number"
           >
 
         </div>
@@ -335,28 +370,14 @@
           SAVE SETTINGS
         </button>
 
-
-        <hr>
-
-
-        <h3>Receipt Settings</h3>
-
-        <input
-          id="receiptFooter"
-          placeholder="Receipt Footer Message"
-        >
-
-        <br><br>
-
-        <button onclick="saveSettings()">
-          SAVE RECEIPT SETTINGS
-        </button>
+      </div>
 
 
-        <hr>
+      <!-- DATA -->
 
+      <div class="panel dataPanel">
 
-        <h3>Data</h3>
+        <h2>Data</h2>
 
         <button onclick="restoreDemoProducts()">
           Restore Demo Products
@@ -366,21 +387,19 @@
           Backup Data
         </button>
 
-        <label class="restoreFile">
 
+        <label class="fileBtn">
           Restore Backup
-
           <input
             type="file"
+            accept=".json"
             onchange="restoreBackup(event)"
           >
-
         </label>
 
       </div>
 
     </section>
-
 
   </main>
 
@@ -389,26 +408,25 @@
 
 
 <!-- RECEIPT MODAL -->
+
 <div id="receiptModal" class="modal hidden">
 
-  <div class="modalBox">
+  <div class="receiptWrap">
 
-    <div class="modalActions">
+    <div class="modalButtons">
 
-      <button onclick="window.print()">
+      <button onclick="printReceipt()">
         🖨 Print
       </button>
 
       <button onclick="closeReceipt()">
-        Close
+        ✕ Close
       </button>
 
     </div>
 
 
-    <div id="receipt" class="receipt">
-
-    </div>
+    <div id="receipt" class="receipt"></div>
 
   </div>
 
