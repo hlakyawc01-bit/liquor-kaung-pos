@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LIQUOR KAUNG POS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="loginPage" class="centerPage">
+  <div class="loginCard">
+    <h1>🥃 LIQUOR KAUNG</h1><p>POS WEB APP</p>
+    <input id="username" placeholder="Username" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    <button onclick="login()">LOGIN</button>
+    <small>Offline data is stored in this browser.</small>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header><div><b>🥃 LIQUOR KAUNG</b><span>OFFLINE POS</span></div><div><button class="light" onclick="logout()">Logout</button></div></header>
+<nav>
+<button class="nav active" onclick="showPage('sale',this)">🛒 Sale</button>
+<button class="nav" onclick="showPage('products',this)">📦 Products</button>
+<button class="nav" onclick="showPage('report',this)">📊 Report</button>
+<button class="nav" onclick="showPage('settings',this)">⚙ Settings</button>
+</nav>
+
+<main>
+<section id="sale" class="page">
+<div class="grid2">
+<div class="panel">
+<h2>New Sale</h2>
+<div class="row"><input id="scan" placeholder="Scan / Enter Barcode or Product Code" onkeydown="if(event.key==='Enter') addByCode()"><button onclick="addByCode()">ADD</button></div>
+<div id="cart"></div>
+</div>
+<div class="panel checkout">
+<h2>Checkout</h2>
+<div class="bigTotal">Total: <span id="total">0</span> Ks</div>
+<label>Payment</label><select id="payment"><option>CASH</option><option>KBZPAY</option><option>CARD</option></select>
+<label class="check"><input id="duplicate" type="checkbox"> Reprint as DUPLICATE</label>
+<button class="pay" onclick="checkout()">PAYMENT / GENERATE RECEIPT</button>
+</div>
+</div>
+</section>
+
+<section id="products" class="page hidden">
+<div class="panel">
+<h2>Product & Stock</h2>
+<div class="productForm">
+<input id="pcode" placeholder="Product Code">
+<input id="pbarcode" placeholder="Barcode">
+<input id="pname" placeholder="Product Name">
+<input id="pprice" type="number" placeholder="Price (Ks)">
+<input id="pstock" type="number" placeholder="Stock">
+<button onclick="saveProduct()">SAVE PRODUCT</button>
+</div>
+<div id="productList"></div>
+</div>
+</section>
+
+<section id="report" class="page hidden"><div class="panel"><h2>Sales Report</h2><div id="reportBox"></div><h3>Recent Sales</h3><div id="salesList"></div></div></section>
+
+<section id="settings" class="page hidden"><div class="panel"><h2>Settings</h2>
+<p><b>Shop:</b> LIQUOR KAUNG</p>
+<p><b>Receipt:</b> 80mm / 3-inch thermal format</p>
+<button onclick="seedProducts()">Restore Demo Products</button>
+<button onclick="exportData()">Backup Data</button>
+<label class="fileBtn">Restore Backup<input type="file" onchange="importData(event)"></label>
+</div></section>
+</main>
+</div>
+
+<div id="receiptModal" class="modal hidden"><div class="modalBox">
+<div class="modalActions"><button onclick="printReceipt()">🖨 PRINT</button><button onclick="closeReceipt()">CLOSE</button></div>
+<pre id="receipt" class="receipt"></pre>
+</div></div>
+<script src="app.js"></script>
+</body></html>
