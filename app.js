@@ -1,1105 +1,1159 @@
-// ================================
-// LIQUOR KAUNG POS - app.js
-// ================================
+const STORE='liquorKaungPOS';
 
-const STORE = {
-  products: "lk_products",
-  sales: "lk_sales",
-  user: "lk_logged_in"
+let products=JSON.parse(
+  localStorage.getItem(STORE+'_products')||'[]'
+);
+
+let sales=JSON.parse(
+  localStorage.getItem(STORE+'_sales')||'[]'
+);
+
+let settings=JSON.parse(
+  localStorage.getItem(STORE+'_settings')||'null'
+)||{
+  shopName:'LIQUOR KAUNG',
+  shopType:'LIQUOR STORE',
+  shopAddress:'Yangon, Myanmar',
+  posNo:'001',
+  cashierNo:'R03090',
+  cashierName:'ADMIN',
+  currency:'SGD',
+
+  reprintedBy:'R03090',
+  passportNo:'*****4600',
+  nationality:'',
+  flightCode:'Z6',
+  flightNumber:'2',
+  lotteId:'118296328'
 };
 
-let cart = [];
-
-// ----------------
-// START APP
-// ----------------
-window.onload = function () {
-  if (localStorage.getItem(STORE.user) === "true") {
-    showApp();
-  } else {
-    showLogin();
-  }
-
-  renderProducts();
-  renderCart();
-  renderReport();
-};
+let cart=[];
+let currentReceipt='';
 
 
-// ----------------
-// LOGIN
-// ----------------
-function login() {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  if (!username || !password) {
-    alert("Please enter Username and Password");
-    return;
-  }
-
-  // Demo login
-  localStorage.setItem(STORE.user, "true");
-
-  showApp();
-}
-
-
-// ----------------
-// LOGOUT
-// ----------------
-function logout() {
-  localStorage.removeItem(STORE.user);
-
-  showLogin();
-}
-
-
-// ----------------
-// SHOW LOGIN
-// ----------------
-function showLogin() {
-  document.getElementById("loginPage").classList.remove("hidden");
-  document.getElementById("app").classList.add("hidden");
-}
-
-
-// ----------------
-// SHOW APP
-// ----------------
-function showApp() {
-  document.getElementById("loginPage").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-
-  renderProducts();
-  renderCart();
-  renderReport();
-}
-
-
-// ----------------
-// PAGE NAVIGATION
-// ----------------
-function showPage(pageId, button) {
-
-  document.querySelectorAll(".page").forEach(function (page) {
-    page.classList.add("hidden");
-  });
-
-  document.getElementById(pageId).classList.remove("hidden");
-
-  document.querySelectorAll(".nav").forEach(function (nav) {
-    nav.classList.remove("active");
-  });
-
-  if (button) {
-    button.classList.add("active");
-  }
-
-  if (pageId === "products") {
-    renderProducts();
-  }
-
-  if (pageId === "report") {
-    renderReport();
-  }
-}
-
-
-// ================================
-// PRODUCT FUNCTIONS
-// ================================
-
-// Get Products
-function getProducts() {
-  return JSON.parse(
-    localStorage.getItem(STORE.products) || "[]"
+function money(n){
+  return Number(n||0).toLocaleString(
+    'en-US',
+    {
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }
   );
 }
 
 
-// Save Products
-function setProducts(products) {
+function currencySymbol(){
+  if(settings.currency==='SGD') return 'SGD';
+  if(settings.currency==='USD') return 'USD';
+  if(settings.currency==='MMK') return 'MMK';
+  return settings.currency;
+}
+
+
+function save(){
+
   localStorage.setItem(
-    STORE.products,
+    STORE+'_products',
     JSON.stringify(products)
   );
-}
-
-
-// SAVE PRODUCT
-function saveProduct() {
-
-  const code =
-    document.getElementById("pcode").value.trim();
-
-  const barcode =
-    document.getElementById("pbarcode").value.trim();
-
-  const name =
-    document.getElementById("pname").value.trim();
-
-  const price =
-    Number(document.getElementById("pprice").value);
-
-  const stock =
-    Number(document.getElementById("pstock").value);
-
-
-  if (!code || !name) {
-    alert("Please enter Product Code and Product Name");
-    return;
-  }
-
-
-  if (price < 0 || !Number.isFinite(price)) {
-    alert("Please enter a valid price");
-    return;
-  }
-
-
-  if (stock < 0 || !Number.isFinite(stock)) {
-    alert("Please enter a valid stock");
-    return;
-  }
-
-
-  let products = getProducts();
-
-  const existingIndex = products.findIndex(function (p) {
-    return p.code === code;
-  });
-
-
-  const product = {
-    code: code,
-    barcode: barcode,
-    name: name,
-    price: price,
-    stock: stock
-  };
-
-
-  if (existingIndex >= 0) {
-    products[existingIndex] = product;
-  } else {
-    products.push(product);
-  }
-
-
-  setProducts(products);
-
-
-  // Clear inputs
-  document.getElementById("pcode").value = "";
-  document.getElementById("pbarcode").value = "";
-  document.getElementById("pname").value = "";
-  document.getElementById("pprice").value = "";
-  document.getElementById("pstock").value = "";
-
-
-  renderProducts();
-
-  alert("Product Saved Successfully");
-}
-
-
-// ----------------
-// RENDER PRODUCTS
-// ----------------
-function renderProducts() {
-
-  const productList =
-    document.getElementById("productList");
-
-  if (!productList) return;
-
-
-  const products = getProducts();
-
-
-  if (products.length === 0) {
-
-    productList.innerHTML = `
-      <p style="color:#777">
-        No products yet.
-        Add a product above or restore demo products.
-      </p>
-    `;
-
-    return;
-  }
-
-
-  productList.innerHTML = products
-    .map(function (p) {
-
-      return `
-        <div class="productItem">
-
-          <div>
-            <b>${escapeHtml(p.name)}</b>
-            <br>
-
-            <small>
-              Code: ${escapeHtml(p.code)}
-              ${p.barcode ? " | Barcode: " + escapeHtml(p.barcode) : ""}
-            </small>
-
-            <br>
-
-            <small>
-              Price: ${money(p.price)} Ks
-              | Stock: ${p.stock}
-            </small>
-          </div>
-
-          <button
-            class="remove"
-            onclick="deleteProduct('${jsEscape(p.code)}')"
-          >
-            DELETE
-          </button>
-
-        </div>
-      `;
-    })
-    .join("");
-}
-
-
-// ----------------
-// DELETE PRODUCT
-// ----------------
-function deleteProduct(code) {
-
-  if (!confirm("Delete this product?")) {
-    return;
-  }
-
-
-  let products = getProducts();
-
-  products = products.filter(function (p) {
-    return p.code !== code;
-  });
-
-
-  setProducts(products);
-
-  renderProducts();
-}
-
-
-// ================================
-// CART FUNCTIONS
-// ================================
-
-
-// ADD BY CODE
-function addByCode() {
-
-  const input =
-    document.getElementById("scan");
-
-  const value =
-    input.value.trim();
-
-
-  if (!value) {
-    alert("Enter Product Code or Barcode");
-    return;
-  }
-
-
-  const products = getProducts();
-
-
-  const product = products.find(function (p) {
-    return (
-      p.code === value ||
-      p.barcode === value
-    );
-  });
-
-
-  if (!product) {
-    alert("Product not found");
-    return;
-  }
-
-
-  if (product.stock <= 0) {
-    alert("Out of stock");
-    return;
-  }
-
-
-  const cartItem = cart.find(function (item) {
-    return item.code === product.code;
-  });
-
-
-  if (cartItem) {
-
-    if (cartItem.qty >= product.stock) {
-      alert("Not enough stock");
-      return;
-    }
-
-    cartItem.qty++;
-
-  } else {
-
-    cart.push({
-      code: product.code,
-      name: product.name,
-      price: Number(product.price),
-      qty: 1
-    });
-
-  }
-
-
-  input.value = "";
-
-  renderCart();
-}
-
-
-// ----------------
-// RENDER CART
-// ----------------
-function renderCart() {
-
-  const cartBox =
-    document.getElementById("cart");
-
-  const totalBox =
-    document.getElementById("total");
-
-  if (!cartBox || !totalBox) return;
-
-
-  if (cart.length === 0) {
-
-    cartBox.innerHTML = `
-      <p style="color:#777">
-        Cart is empty.
-      </p>
-    `;
-
-    totalBox.textContent = "0";
-
-    return;
-  }
-
-
-  cartBox.innerHTML = cart
-    .map(function (item, index) {
-
-      return `
-        <div class="cartItem">
-
-          <div class="cartName">
-
-            <b>${escapeHtml(item.name)}</b>
-
-            <br>
-
-            <small>
-              ${money(item.price)} Ks
-              ×
-              ${item.qty}
-              =
-              ${money(item.price * item.qty)} Ks
-            </small>
-
-          </div>
-
-
-          <button
-            class="qtyBtn"
-            onclick="changeQty(${index}, -1)"
-          >
-            −
-          </button>
-
-
-          <b>${item.qty}</b>
-
-
-          <button
-            class="qtyBtn"
-            onclick="changeQty(${index}, 1)"
-          >
-            +
-          </button>
-
-
-          <button
-            class="remove"
-            onclick="removeCartItem(${index})"
-          >
-            X
-          </button>
-
-        </div>
-      `;
-    })
-    .join("");
-
-
-  totalBox.textContent =
-    money(getCartTotal());
-}
-
-
-// ----------------
-// CHANGE QUANTITY
-// ----------------
-function changeQty(index, change) {
-
-  const item = cart[index];
-
-  if (!item) return;
-
-
-  const products = getProducts();
-
-
-  const product = products.find(function (p) {
-    return p.code === item.code;
-  });
-
-
-  if (!product) return;
-
-
-  const newQty =
-    item.qty + change;
-
-
-  if (newQty <= 0) {
-    cart.splice(index, 1);
-
-    renderCart();
-
-    return;
-  }
-
-
-  if (newQty > product.stock) {
-    alert("Not enough stock");
-
-    return;
-  }
-
-
-  item.qty = newQty;
-
-  renderCart();
-}
-
-
-// ----------------
-// REMOVE CART ITEM
-// ----------------
-function removeCartItem(index) {
-
-  cart.splice(index, 1);
-
-  renderCart();
-}
-
-
-// ----------------
-// CART TOTAL
-// ----------------
-function getCartTotal() {
-
-  return cart.reduce(function (total, item) {
-
-    return total +
-      (item.price * item.qty);
-
-  }, 0);
-}
-
-
-// ================================
-// CHECKOUT
-// ================================
-function checkout() {
-
-  if (cart.length === 0) {
-    alert("Cart is empty");
-    return;
-  }
-
-
-  const products = getProducts();
-
-
-  // Check stock again
-  for (let i = 0; i < cart.length; i++) {
-
-    const item = cart[i];
-
-    const product = products.find(function (p) {
-      return p.code === item.code;
-    });
-
-
-    if (!product || product.stock < item.qty) {
-
-      alert(
-        "Not enough stock for: " +
-        item.name
-      );
-
-      return;
-    }
-
-  }
-
-
-  // Reduce stock
-  cart.forEach(function (item) {
-
-    const product = products.find(function (p) {
-      return p.code === item.code;
-    });
-
-
-    product.stock -= item.qty;
-
-  });
-
-
-  setProducts(products);
-
-
-  const sales = getSales();
-
-
-  const payment =
-    document.getElementById("payment").value;
-
-
-  const duplicate =
-    document.getElementById("duplicate").checked;
-
-
-  const sale = {
-
-    id:
-      "LK-" +
-      Date.now(),
-
-    date:
-      new Date().toLocaleString(),
-
-    payment:
-      payment,
-
-    duplicate:
-      duplicate,
-
-    items:
-      JSON.parse(JSON.stringify(cart)),
-
-    total:
-      getCartTotal()
-
-  };
-
-
-  sales.unshift(sale);
-
-
-  setSales(sales);
-
-
-  generateReceipt(sale);
-
-
-  // Clear cart
-  cart = [];
-
-
-  document.getElementById("duplicate").checked = false;
-
-
-  renderCart();
-  renderProducts();
-  renderReport();
-
-
-  document
-    .getElementById("receiptModal")
-    .classList
-    .remove("hidden");
-
-}
-
-
-// ================================
-// SALES FUNCTIONS
-// ================================
-
-function getSales() {
-
-  return JSON.parse(
-    localStorage.getItem(STORE.sales) || "[]"
-  );
-
-}
-
-
-function setSales(sales) {
 
   localStorage.setItem(
-    STORE.sales,
+    STORE+'_sales',
     JSON.stringify(sales)
   );
 
+  localStorage.setItem(
+    STORE+'_settings',
+    JSON.stringify(settings)
+  );
 }
 
 
-// ----------------
-// RENDER REPORT
-// ----------------
-function renderReport() {
+function login(){
 
-  const reportBox =
-    document.getElementById("reportBox");
+  const u=document.getElementById('username').value;
+  const p=document.getElementById('password').value;
 
-  const salesList =
-    document.getElementById("salesList");
+  if(u==='Tikegall' && p==='337272'){
 
+    sessionStorage.setItem(
+      STORE+'_login',
+      '1'
+    );
 
-  if (!reportBox || !salesList) return;
+    openApp();
 
+  }else{
 
-  const sales = getSales();
+    alert('Username or Password မှားနေပါတယ်');
 
+  }
 
-  const totalSales =
-    sales.reduce(function (sum, sale) {
-      return sum + Number(sale.total);
-    }, 0);
-
-
-  reportBox.innerHTML = `
-    <div class="bigTotal">
-      Total Sales:
-      ${money(totalSales)} Ks
-    </div>
-
-    <p>
-      Number of Sales:
-      <b>${sales.length}</b>
-    </p>
-  `;
+}
 
 
-  if (sales.length === 0) {
+function openApp(){
 
-    salesList.innerHTML =
-      "<p>No sales yet.</p>";
+  document
+    .getElementById('loginPage')
+    .classList.add('hidden');
 
+  document
+    .getElementById('app')
+    .classList.remove('hidden');
+
+  renderAll();
+
+}
+
+
+function logout(){
+
+  sessionStorage.removeItem(
+    STORE+'_login'
+  );
+
+  location.reload();
+
+}
+
+
+function showPage(id,btn){
+
+  document
+    .querySelectorAll('.page')
+    .forEach(x=>x.classList.add('hidden'));
+
+  document
+    .getElementById(id)
+    .classList.remove('hidden');
+
+
+  document
+    .querySelectorAll('.nav')
+    .forEach(x=>x.classList.remove('active'));
+
+  btn.classList.add('active');
+
+  renderAll();
+
+}
+
+
+/* =========================
+   SETTINGS
+========================= */
+
+function saveSettings(){
+
+  settings.shopName=
+    document.getElementById('shopName').value.trim()
+    ||'LIQUOR KAUNG';
+
+  settings.shopType=
+    document.getElementById('shopType').value.trim()
+    ||'LIQUOR STORE';
+
+  settings.shopAddress=
+    document.getElementById('shopAddress').value.trim();
+
+  settings.posNo=
+    document.getElementById('posNo').value.trim()
+    ||'001';
+
+  settings.cashierNo=
+    document.getElementById('cashierNo').value.trim();
+
+  settings.cashierName=
+    document.getElementById('cashierName').value.trim()
+    ||'ADMIN';
+
+  settings.currency=
+    document.getElementById('currency').value;
+
+  settings.reprintedBy=
+    document.getElementById('reprintedBy').value.trim();
+
+  settings.passportNo=
+    document.getElementById('passportNo').value.trim();
+
+  settings.nationality=
+    document.getElementById('nationality').value.trim();
+
+  settings.flightCode=
+    document.getElementById('flightCode').value.trim();
+
+  settings.flightNumber=
+    document.getElementById('flightNumber').value.trim();
+
+  settings.lotteId=
+    document.getElementById('lotteId').value.trim();
+
+
+  save();
+
+  renderAll();
+
+  alert('Settings saved successfully');
+
+}
+
+
+function renderSettings(){
+
+  const ids=[
+    'shopName',
+    'shopType',
+    'shopAddress',
+    'posNo',
+    'cashierNo',
+    'cashierName',
+    'currency',
+    'reprintedBy',
+    'passportNo',
+    'nationality',
+    'flightCode',
+    'flightNumber',
+    'lotteId'
+  ];
+
+
+  if(!document.getElementById('shopName')){
     return;
   }
 
 
-  salesList.innerHTML =
-    sales.slice(0, 20)
-      .map(function (sale) {
+  document.getElementById('shopName').value=
+    settings.shopName||'';
 
-        return `
-          <div class="saleItem">
+  document.getElementById('shopType').value=
+    settings.shopType||'';
 
-            <div style="flex:1">
+  document.getElementById('shopAddress').value=
+    settings.shopAddress||'';
 
-              <b>${escapeHtml(sale.id)}</b>
+  document.getElementById('posNo').value=
+    settings.posNo||'';
 
-              <br>
+  document.getElementById('cashierNo').value=
+    settings.cashierNo||'';
 
-              <small>
-                ${escapeHtml(sale.date)}
-              </small>
+  document.getElementById('cashierName').value=
+    settings.cashierName||'';
 
-              <br>
+  document.getElementById('currency').value=
+    settings.currency||'SGD';
 
-              <small>
-                Payment:
-                ${escapeHtml(sale.payment)}
-              </small>
+  document.getElementById('reprintedBy').value=
+    settings.reprintedBy||'';
 
-            </div>
+  document.getElementById('passportNo').value=
+    settings.passportNo||'';
 
+  document.getElementById('nationality').value=
+    settings.nationality||'';
 
-            <div>
-              <b>
-                ${money(sale.total)} Ks
-              </b>
-            </div>
+  document.getElementById('flightCode').value=
+    settings.flightCode||'';
 
-          </div>
-        `;
+  document.getElementById('flightNumber').value=
+    settings.flightNumber||'';
 
-      })
-      .join("");
+  document.getElementById('lotteId').value=
+    settings.lotteId||'';
 
 }
 
 
-// ================================
-// RECEIPT
-// ================================
-function generateReceipt(sale) {
+/* =========================
+   PRODUCTS
+========================= */
 
-  const receipt =
-    document.getElementById("receipt");
+function seedProducts(){
 
-
-  let text = "";
-
-
-  text += "        LIQUOR KAUNG\n";
-  text += "          OFFLINE POS\n";
-  text += "--------------------------------\n";
-
-  text +=
-    "Receipt: " +
-    sale.id +
-    "\n";
+  if(
+    products.length &&
+    !confirm(
+      'Demo products ကို ပြန်ထည့်မလား?'
+    )
+  ) return;
 
 
-  text +=
-    sale.date +
-    "\n";
+  products=[
+
+    {
+      id:1,
+      code:'P001',
+      barcode:'5000267112318',
+      name:'JOHNNIE WALKER BLACK LABEL 750ml',
+      price:45,
+      stock:20
+    },
+
+    {
+      id:2,
+      code:'P002',
+      barcode:'5000299625100',
+      name:'CHIVAS REGAL 12YO 700ml',
+      price:32,
+      stock:15
+    },
+
+    {
+      id:3,
+      code:'P003',
+      barcode:'509998373007214',
+      name:"JACK DANIEL'S 700ml",
+      price:38,
+      stock:12
+    },
+
+    {
+      id:4,
+      code:'P004',
+      barcode:'8886469200015',
+      name:'HEINEKEN BEER 330ml',
+      price:3,
+      stock:80
+    },
+
+    {
+      id:5,
+      code:'P005',
+      barcode:'8851932420045',
+      name:'TIGER BEER CAN 330ml',
+      price:2.5,
+      stock:100
+    }
+
+  ];
+
+  save();
+  renderAll();
+
+}
 
 
-  text +=
-    "Payment: " +
-    sale.payment +
-    "\n";
+function saveProduct(){
+
+  const code=
+    document.getElementById('pcode').value.trim();
+
+  const barcode=
+    document.getElementById('pbarcode').value.trim()
+    ||code;
+
+  const name=
+    document.getElementById('pname').value.trim();
+
+  const price=
+    parseFloat(
+      document.getElementById('pprice').value
+    );
+
+  const stock=
+    parseInt(
+      document.getElementById('pstock').value
+    )||0;
 
 
-  if (sale.duplicate) {
+  if(!code || !name || isNaN(price)){
 
-    text +=
-      "*** DUPLICATE RECEIPT ***\n";
+    alert(
+      'Product Code, Name, Price ထည့်ပါ'
+    );
+
+    return;
 
   }
 
 
-  text +=
-    "--------------------------------\n";
+  products.push({
 
-
-  sale.items.forEach(function (item) {
-
-    text +=
-      item.name +
-      "\n";
-
-
-    text +=
-      item.qty +
-      " x " +
-      money(item.price) +
-      " = " +
-      money(item.price * item.qty) +
-      " Ks\n";
+    id:Date.now(),
+    code,
+    barcode,
+    name,
+    price,
+    stock
 
   });
 
 
-  text +=
-    "--------------------------------\n";
+  save();
 
 
-  text +=
-    "TOTAL: " +
-    money(sale.total) +
-    " Ks\n";
+  document.getElementById('pcode').value='';
+  document.getElementById('pbarcode').value='';
+  document.getElementById('pname').value='';
+  document.getElementById('pprice').value='';
+  document.getElementById('pstock').value='';
 
 
-  text +=
-    "--------------------------------\n";
+  renderProducts();
 
+  alert('Product added successfully');
 
-  text +=
-    "      THANK YOU!\n";
-
-
-  receipt.textContent = text;
 }
 
 
-// ----------------
-// CLOSE RECEIPT
-// ----------------
-function closeReceipt() {
+function renderProducts(){
+
+  const box=
+    document.getElementById('productList');
+
+  if(!box)return;
+
+
+  box.innerHTML=
+    products.map(p=>`
+
+      <div class="productItem">
+
+        <div>
+
+          <b>${p.name}</b>
+
+          <br>
+
+          <small>
+            ${p.code}
+            |
+            ${p.barcode}
+            |
+            Stock: ${p.stock}
+          </small>
+
+        </div>
+
+        <div>
+
+          ${currencySymbol()}
+          ${money(p.price)}
+
+        </div>
+
+      </div>
+
+    `).join('')
+    ||'<p>No products yet.</p>';
+
+}
+
+
+/* =========================
+   CART
+========================= */
+
+function addByCode(){
+
+  const input=
+    document.getElementById('scan');
+
+  const code=input.value.trim();
+
+  if(!code)return;
+
+
+  const p=products.find(
+    x=>
+      x.code===code ||
+      x.barcode===code ||
+      x.name.toLowerCase()===
+      code.toLowerCase()
+  );
+
+
+  if(!p){
+
+    alert('Product မတွေ့ပါ');
+
+    return;
+
+  }
+
+
+  if(p.stock<=0){
+
+    alert('Out of stock');
+
+    return;
+
+  }
+
+
+  const x=cart.find(
+    x=>x.product.id===p.id
+  );
+
+
+  if(x){
+
+    if(x.qty<p.stock){
+      x.qty++;
+    }
+
+  }else{
+
+    cart.push({
+      product:p,
+      qty:1
+    });
+
+  }
+
+
+  input.value='';
+
+  renderCart();
+
+}
+
+
+function renderCart(){
+
+  const box=
+    document.getElementById('cart');
+
+  if(!box)return;
+
+
+  const total=
+    cart.reduce(
+      (a,x)=>
+        a+x.qty*x.product.price,
+      0
+    );
+
+
+  box.innerHTML=
+
+    cart.map((x,i)=>`
+
+      <div class="cartItem">
+
+        <div class="cartName">
+
+          <b>
+            ${x.product.name}
+          </b>
+
+          <br>
+
+          <small>
+            ${x.product.barcode}
+          </small>
+
+        </div>
+
+
+        <button
+          class="qtyBtn"
+          onclick="qty(${i},-1)"
+        >
+          −
+        </button>
+
+
+        <b>${x.qty}</b>
+
+
+        <button
+          class="qtyBtn"
+          onclick="qty(${i},1)"
+        >
+          +
+        </button>
+
+
+        <span>
+
+          ${currencySymbol()}
+          ${money(
+            x.qty*x.product.price
+          )}
+
+        </span>
+
+
+        <button
+          class="remove"
+          onclick="removeCart(${i})"
+        >
+          ×
+        </button>
+
+      </div>
+
+    `).join('')
+
+    ||'<p>Cart is empty.</p>';
+
 
   document
-    .getElementById("receiptModal")
-    .classList
-    .add("hidden");
+    .getElementById('total')
+    .textContent=
+      money(total);
+
+
+  const currencyLabel=
+    document.getElementById(
+      'currencyLabel'
+    );
+
+  if(currencyLabel){
+
+    currencyLabel.textContent=
+      currencySymbol();
+
+  }
 
 }
 
 
-// ----------------
-// PRINT RECEIPT
-// ----------------
-function printReceipt() {
+function qty(i,d){
+
+  cart[i].qty=
+
+    Math.max(
+      1,
+
+      Math.min(
+        cart[i].product.stock,
+        cart[i].qty+d
+      )
+
+    );
+
+
+  renderCart();
+
+}
+
+
+function removeCart(i){
+
+  cart.splice(i,1);
+
+  renderCart();
+
+}
+
+
+/* =========================
+   RECEIPT
+========================= */
+
+function receiptNo(){
+
+  const d=new Date();
+
+  return
+
+    'LK'+
+    String(
+      d.getFullYear()
+    ).slice(2)+
+
+    String(
+      d.getMonth()+1
+    ).padStart(2,'0')+
+
+    String(
+      d.getDate()
+    ).padStart(2,'0')+
+
+    '-'+
+    String(
+      Date.now()
+    ).slice(-6);
+
+}
+
+
+function makeReceipt(
+  no,
+  items,
+  payment,
+  duplicate
+){
+
+  const d=new Date();
+
+  const date=
+    d.toLocaleDateString('en-GB');
+
+  const time=
+    d.toTimeString().slice(0,8);
+
+
+  const total=
+
+    items.reduce(
+      (a,x)=>
+        a+x.qty*x.product.price,
+      0
+    );
+
+
+  let r='';
+
+
+  r+=
+`${settings.shopName}
+${settings.shopType}
+${settings.shopAddress}
+
+POS : ${settings.posNo}                    Date : ${date}
+Cashier : ${settings.cashierNo}             Time : ${time}
+Cashier Name : ${settings.cashierName}
+Receipt No. : ${no}
+`;
+
+
+  if(duplicate){
+
+    r+=`
+
+*****DUPLICATE*****
+
+Reprinted by : ${settings.reprintedBy}
+Reprinted Date Time : ${date} ${time}
+
+
+Passport No. : ${settings.passportNo}
+Nationality : ${settings.nationality}
+Flight Code : ${settings.flightCode}
+Flight Number : ${settings.flightNumber}
+Lotte Membership ID : ${settings.lotteId}
+
+`;
+
+  }
+
+
+  r+=`
+ITEM NAME                 QTY     PRICE      TOTAL
+------------------------------------------------
+`;
+
+
+  items.forEach(x=>{
+
+    const itemTotal=
+      x.qty*x.product.price;
+
+
+    r+=
+`${x.product.code} : ${x.product.name}
+${x.product.barcode}
+                         ${String(x.qty).padStart(2)}
+                         ${String(money(x.product.price)).padStart(8)}
+                         ${String(money(itemTotal)).padStart(9)}
+`;
+
+  });
+
+
+  r+=
+`------------------------------------------------
+Sub Total                          ${money(total)} ${currencySymbol()}
+GST @ 0.00%                                 0.00
+Total amount (${currencySymbol()})          ${money(total)}
+
+Total No. Items : ${items.reduce((a,x)=>a+x.qty,0)}
+
+                   Tender Summary
+================================================
+${payment.toUpperCase()}                     ${money(total)} ${currencySymbol()}
+
+      Thank you for shopping at ${settings.shopName}
+              Please come again!
+
+================================================
+Receipt No: ${no}
+`;
+
+
+  return r;
+
+}
+
+
+/* =========================
+   CHECKOUT
+========================= */
+
+function checkout(){
+
+  if(!cart.length){
+
+    alert('Cart is empty');
+
+    return;
+
+  }
+
+
+  const no=
+    receiptNo();
+
+
+  const payment=
+    document.getElementById(
+      'payment'
+    ).value;
+
+
+  const duplicate=
+    document.getElementById(
+      'duplicate'
+    ).checked;
+
+
+  const total=
+
+    cart.reduce(
+      (a,x)=>
+        a+x.qty*x.product.price,
+      0
+    );
+
+
+  cart.forEach(x=>{
+
+    const p=
+      products.find(
+        p=>p.id===x.product.id
+      );
+
+    if(p){
+      p.stock-=x.qty;
+    }
+
+  });
+
+
+  sales.push({
+
+    no,
+    total,
+    payment,
+
+    date:
+      new Date().toISOString(),
+
+    items:
+
+      cart.map(x=>({
+
+        product:{
+          ...x.product
+        },
+
+        qty:x.qty
+
+      }))
+
+  });
+
+
+  save();
+
+
+  currentReceipt=
+
+    makeReceipt(
+      no,
+      cart,
+      payment,
+      duplicate
+    );
+
+
+  document
+    .getElementById('receipt')
+    .textContent=
+      currentReceipt;
+
+
+  document
+    .getElementById('receiptModal')
+    .classList.remove('hidden');
+
+
+  cart=[];
+
+  renderAll();
+
+}
+
+
+function closeReceipt(){
+
+  document
+    .getElementById('receiptModal')
+    .classList.add('hidden');
+
+}
+
+
+function printReceipt(){
 
   window.print();
 
 }
 
 
-// ================================
-// DEMO PRODUCTS
-// ================================
-function seedProducts() {
+/* =========================
+   REPORT
+========================= */
 
-  const demoProducts = [
+function renderReport(){
 
-    {
-      code: "LK001",
-      barcode: "885000000001",
-      name: "Whisky",
-      price: 25000,
-      stock: 20
-    },
-
-    {
-      code: "LK002",
-      barcode: "885000000002",
-      name: "Vodka",
-      price: 18000,
-      stock: 15
-    },
-
-    {
-      code: "LK003",
-      barcode: "885000000003",
-      name: "Beer",
-      price: 3500,
-      stock: 50
-    },
-
-    {
-      code: "LK004",
-      barcode: "885000000004",
-      name: "Red Wine",
-      price: 30000,
-      stock: 10
-    }
-
-  ];
-
-
-  if (
-    confirm(
-      "Restore demo products? Existing products will be replaced."
-    )
-  ) {
-
-    setProducts(demoProducts);
-
-    renderProducts();
-
-    alert(
-      "Demo products restored successfully"
+  const box=
+    document.getElementById(
+      'reportBox'
     );
 
-  }
+  const list=
+    document.getElementById(
+      'salesList'
+    );
+
+
+  if(!box || !list)return;
+
+
+  const today=
+    new Date().toDateString();
+
+
+  const ss=
+
+    sales.filter(
+      x=>
+        new Date(
+          x.date
+        ).toDateString()
+        ===today
+    );
+
+
+  const total=
+
+    ss.reduce(
+      (a,x)=>a+x.total,
+      0
+    );
+
+
+  box.innerHTML=
+
+    `<h3>Today</h3>
+
+    <p>
+    Transactions:
+    <b>${ss.length}</b>
+    </p>
+
+    <p>
+    Total Sales:
+    <b>
+    ${currencySymbol()}
+    ${money(total)}
+    </b>
+    </p>`;
+
+
+  list.innerHTML=
+
+    sales
+    .slice()
+    .reverse()
+    .slice(0,20)
+
+    .map(x=>`
+
+      <div class="saleItem">
+
+        <div>
+
+          <b>
+            ${x.no}
+          </b>
+
+          <br>
+
+          <small>
+            ${new Date(
+              x.date
+            ).toLocaleString()}
+          </small>
+
+        </div>
+
+
+        <div>
+
+          ${x.payment}
+
+          <br>
+
+          <b>
+            ${currencySymbol()}
+            ${money(x.total)}
+          </b>
+
+        </div>
+
+      </div>
+
+    `).join('')
+
+    ||'<p>No sales yet.</p>';
 
 }
 
 
-// ================================
-// BACKUP DATA
-// ================================
-function exportData() {
+/* =========================
+   BACKUP
+========================= */
 
-  const data = {
+function exportData(){
 
-    products:
-      getProducts(),
+  const data=
 
-    sales:
-      getSales(),
+    JSON.stringify({
 
-    exportDate:
-      new Date().toISOString()
+      products,
+      sales,
+      settings
 
-  };
+    },null,2);
 
 
-  const json =
-    JSON.stringify(data, null, 2);
+  const a=
+    document.createElement('a');
 
 
-  const blob =
-    new Blob(
-      [json],
-      {
-        type:
-          "application/json"
-      }
+  a.href=
+
+    URL.createObjectURL(
+
+      new Blob(
+        [data],
+        {
+          type:'application/json'
+        }
+      )
+
     );
 
 
-  const url =
-    URL.createObjectURL(blob);
-
-
-  const a =
-    document.createElement("a");
-
-
-  a.href = url;
-
-
-  a.download =
-    "liquor-kaung-backup.json";
+  a.download=
+    'liquor-kaung-backup.json';
 
 
   a.click();
 
-
-  URL.revokeObjectURL(url);
-
 }
 
 
-// ================================
-// IMPORT BACKUP
-// ================================
-function importData(event) {
+function importData(e){
 
-  const file =
-    event.target.files[0];
+  const f=e.target.files[0];
+
+  if(!f)return;
 
 
-  if (!file) return;
-
-
-  const reader =
+  const r=
     new FileReader();
 
 
-  reader.onload =
-    function (e) {
+  r.onload=()=>{
 
-      try {
+    try{
 
-        const data =
-          JSON.parse(
-            e.target.result
-          );
+      const x=
+        JSON.parse(r.result);
 
 
-        if (
-          !data.products ||
-          !data.sales
-        ) {
-
-          alert(
-            "Invalid backup file"
-          );
-
-          return;
-
-        }
+      products=
+        x.products||[];
 
 
-        if (
-          !confirm(
-            "Restore backup? Current data will be replaced."
-          )
-        ) {
-
-          return;
-
-        }
+      sales=
+        x.sales||[];
 
 
-        setProducts(
-          data.products
-        );
+      if(x.settings){
 
-
-        setSales(
-          data.sales
-        );
-
-
-        renderProducts();
-        renderCart();
-        renderReport();
-
-
-        alert(
-          "Backup restored successfully"
-        );
-
-      } catch (error) {
-
-        alert(
-          "Error reading backup file"
-        );
+        settings={
+          ...settings,
+          ...x.settings
+        };
 
       }
 
-    };
+
+      save();
+
+      renderAll();
+
+      alert(
+        'Restore complete'
+      );
+
+    }catch{
+
+      alert(
+        'Invalid backup file'
+      );
+
+    }
+
+  };
 
 
-  reader.readAsText(file);
-
-}
-
-
-// ================================
-// HELPER FUNCTIONS
-// ================================
-
-function money(value) {
-
-  return Number(value || 0)
-    .toLocaleString("en-US");
-
-}
-
-
-function escapeHtml(text) {
-
-  return String(text || "")
-
-    .replace(/&/g, "&amp;")
-
-    .replace(/</g, "&lt;")
-
-    .replace(/>/g, "&gt;")
-
-    .replace(/"/g, "&quot;")
-
-    .replace(/'/g, "&#039;");
+  r.readAsText(f);
 
 }
 
 
-function jsEscape(text) {
+/* =========================
+   RENDER
+========================= */
 
-  return String(text || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'");
+function renderAll(){
+
+  renderProducts();
+
+  renderCart();
+
+  renderReport();
+
+  renderSettings();
+
+}
+
+
+/* =========================
+   START
+========================= */
+
+if(
+  sessionStorage.getItem(
+    STORE+'_login'
+  )
+){
+
+  openApp();
+
+}else{
+
+  if(!products.length){
+    seedProducts();
+  }
 
 }
