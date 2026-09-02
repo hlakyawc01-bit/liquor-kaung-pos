@@ -48,53 +48,6 @@ function money(value){
 }
 
 
-/* ================= LOGIN ================= */
-
-function login(){
-
-  const user =
-    document.getElementById("loginUser").value;
-
-  const pass =
-    document.getElementById("loginPass").value;
-
-  if(user === "Tikegall" && pass === "337272"){
-
-    document
-      .getElementById("loginPage")
-      .classList
-      .add("hidden");
-
-    document
-      .getElementById("appPage")
-      .classList
-      .remove("hidden");
-
-    initApp();
-
-  }else{
-
-    alert("Username or Password incorrect!");
-
-  }
-
-}
-
-
-function logout(){
-
-  document
-    .getElementById("appPage")
-    .classList
-    .add("hidden");
-
-  document
-    .getElementById("loginPage")
-    .classList
-    .remove("hidden");
-
-}
-
 
 /* ================= INIT ================= */
 
