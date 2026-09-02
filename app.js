@@ -957,10 +957,10 @@ function generateReceipt(sale){
       <b>
         ${escapeHtml(settings.shopName)}
       </b>
-
+        ${escapeHtml(settings.shopName)}
       <br>
 
-      ${escapeHtml(settings.shopType)}
+        ${escapeHtml(settings.shopType)}
 
       <br>
 
@@ -968,7 +968,7 @@ function generateReceipt(sale){
 
       <br><br>
 
-      GST Reg No.
+      GST Reg No.201047172R
 
     </div>
 
@@ -1202,7 +1202,7 @@ function generateReceipt(sale){
     <div>
 
       Terminal Id :
-      ${escapeHtml(settings.posNumber)}
+      ${escapeHtml(settings.TerminalID)}
 
     </div>
 
@@ -1230,7 +1230,9 @@ function generateReceipt(sale){
 
     </div>
 
-
+      Last 4 digits : 
+      1465
+      
     <div>
 
       Member Tier :
@@ -1264,11 +1266,13 @@ function generateReceipt(sale){
 
       <br><br>
 
-      For enquiry, please email
+      For enquiry, please email :
 
+        ${escapeHtml(settings.footerMessage)}
+      
       <br>
 
-      hello@liquorkaung.com
+      
 
     </div>
 
@@ -1448,6 +1452,7 @@ function loadSettingsToForm(){
 
     "shopName",
     "shopType",
+    "shopType",
     "shopAddress",
     "posNumber",
     "cashierNumber",
@@ -1490,6 +1495,7 @@ function saveSettings(){
 
   const ids = [
 
+    "shopName",
     "shopName",
     "shopName",
     "shopType",
