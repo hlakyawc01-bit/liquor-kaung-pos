@@ -8,10 +8,10 @@ let editingProduct = null;
 /* ================= SETTINGS ================= */
 
 const defaultSettings = {
-  shopName: "Liquor HK.",
-  shopType: "Liquor Hk",
-  shopType: "Orchard Airport Terminal 2",
-  shopAddress: "2577",
+  shopName: "LIQUOR KAUNG",
+  shopType: "OFFLINE POS",
+  shopType: "OFFLINE POS",
+  shopAddress: "Singapore",
   posNumber: "217",
   cashierNumber: "R03090",
   cashierName: "CASHIER",
@@ -26,7 +26,17 @@ const defaultSettings = {
 
   gst: "0",
   memberTier: "Platinum",
-  footerMessage: "Thank you for shopping with us",
+  Tier Validity: "19 May 27",
+  Accumulated Net Spend: "$8994",
+  Issued Points: "13740",
+  footerMessage: "Changi Rewards points earned will be
+valid for 12 months from the date of
+issuance, through the last day of the
+final month. Redeem rewards with your
+points on Rewards catalogue or offset
+your next purchase on iShopChangi.com.
+For more details, please refer to
+Changi App.",
   barcodeText: "LOT T2172617211466"
 };
 
@@ -957,10 +967,10 @@ function generateReceipt(sale){
       <b>
         ${escapeHtml(settings.shopName)}
       </b>
-        ${escapeHtml(settings.shopName)}
+
       <br>
 
-        ${escapeHtml(settings.shopType)}
+      ${escapeHtml(settings.shopType)}
 
       <br>
 
@@ -970,7 +980,7 @@ function generateReceipt(sale){
 
       GST Reg No.201047172R
 
-    <br>
+    <div>
 
 
     <div class="receiptLine"></div>
@@ -1023,6 +1033,8 @@ function generateReceipt(sale){
     <div class="receiptTitle">
 
       *****DUPLICATE*****
+
+    </div>
 
 
     <div>
@@ -1200,7 +1212,7 @@ function generateReceipt(sale){
     <div>
 
       Terminal Id :
-      ${escapeHtml(settings.TerminalID)}
+      ${escapeHtml(settings.posNumber)}
 
     </div>
 
@@ -1226,51 +1238,43 @@ function generateReceipt(sale){
       Approval Code :
       007244
 
-    </div>
+    <div>
 
       Last 4 digits : 
       1465
-      
-    <div>
+
+    </div>
 
       Member Tier :
       ${escapeHtml(settings.memberTier)}
 
     </div>
 
-      Tier Validity: 
-      ${escapeHtml(settings.TierValidity)}
-      
+      Tier Validity: 19 May 27
+
     <br>
-    
-      Accumulated Net Spend:
-      ${escapeHtml(settings.accumulatednetspend)}
+
+      Accumulated Net Spend: $8994
 
     <div>
-    
-      Issued Points:
-      ${escapeHtml(settings.Issuedpoints)}
+
+      ${escapeHtml(settings.footerMessage)}
 
     </div>
 
-      ${escapeHtml(settings.footerMessage)}
 
     <br>
 
 
     <div class="receiptCenter">
 
-      Thank you for shopping at Lotte Duty Free
+   Thank you for shopping at Lotte Duty Free
+
+        For enquiry, please email
 
       <br>
 
-      For enquiry, please email :
-
-        ${escapeHtml(settings.footerMessage)}
-      
-      <br>
-
-      
+      hello@liquorkaung.com
 
     </div>
 
@@ -1450,7 +1454,6 @@ function loadSettingsToForm(){
 
     "shopName",
     "shopType",
-    "shopType",
     "shopAddress",
     "posNumber",
     "cashierNumber",
@@ -1466,9 +1469,6 @@ function loadSettingsToForm(){
 
     "gst",
     "memberTier",
-    "Tier Validity",
-    "Accumulated Ned Spend",
-    "Isscued Points",
     "footerMessage",
     "barcodeText"
 
@@ -1497,8 +1497,6 @@ function saveSettings(){
   const ids = [
 
     "shopName",
-    "shopName",
-    "shopName",
     "shopType",
     "shopAddress",
     "posNumber",
@@ -1515,11 +1513,9 @@ function saveSettings(){
 
     "gst",
     "memberTier",
-    "Tier Validity",
-    "Accumulated Ned Spend",
-    "Isscued Points",
     "footerMessage",
     "barcodeText"
+
   ];
 
 
