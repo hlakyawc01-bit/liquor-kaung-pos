@@ -5,1525 +5,540 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Modal,
   Alert,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
 } from "react-native";
 
-const STORE_NAME = "LIQUOR TR";
-const CURRENCY = "S$";
+const STORE_NAME = "AUNG";
 
 const INITIAL_PRODUCTS = [
-  {
-    id: "B10135",
-    barcode: "2072984745",
-    name: "Macallan Colour Collection 15Y 700ml",
-    price: 204.8,
-    stock: 20,
-  },
-  {
-    id: "B20012",
-    barcode: "2073616340",
-    name: "Suntory Hibiki 12YO 700ml",
-    price: 250,
-    stock: 10,
-  },
-  {
-    id: "B30001",
-    barcode: "5000267024232",
-    name: "Johnnie Walker Black Label 1L",
-    price: 80,
-    stock: 50,
-  },
-  {
-    id: "B30002",
-    barcode: "5000267014202",
-    name: "Johnnie Walker Red Label 1L",
-    price: 55,
-    stock: 50,
-  },
-  {
-    id: "B30003",
-    barcode: "080432400120",
-    name: "Chivas Regal 12Y 1L",
-    price: 75,
-    stock: 30,
-  },
+  { id: "1", name: "Whisky", price: 45.0 },
+  { id: "2", name: "Beer", price: 8.5 },
+  { id: "3", name: "Wine", price: 35.0 },
+  { id: "4", name: "Vodka", price: 40.0 },
 ];
 
-export default function App() {
-  const [page, setPage] = useState("POS");
+const money = (amount) => `S$ ${Number(amount).toFixed(2)}`;
 
+export default function App() {
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [cart, setCart] = useState([]);
-  const [sales, setSales] = useState([]);
-
   const [search, setSearch] = useState("");
-  const [payment, setPayment] = useState("CASH");
-
-  const [passport, setPassport] = useState("");
-  const [nationality, setNationality] = useState("MM");
-  const [flightCode, setFlightCode] = useState("");
-  const [flightNumber, setFlightNumber] = useState("");
-  const [memberId, setMemberId] = useState("");
-
-  const [cashier, setCashier] = useState("ADMIN");
-  const [shopName, setShopName] = useState(STORE_NAME);
-
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [selectedReceipt, setSelectedReceipt] = useState(null);
-
-  const [showAddProduct, setShowAddProduct] = useState(false);
-
-  const [newProduct, setNewProduct] = useState({
-    id: "",
-    barcode: "",
-    name: "",
-    price: "",
-    stock: "",
-  });
-
-  const money = (value) => Number(value || 0).toFixed(2);
-
-  const subtotal = useMemo(() => {
-    return cart.reduce(
-      (sum, item) => sum + item.price * item.qty,
-      0
-    );
-  }, [cart]);
-
-  const totalItems = useMemo(() => {
-    return cart.reduce(
-      (sum, item) => sum + item.qty,
-      0
-    );
-  }, [cart]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPrice, setNewPrice] = useState("");
 
   const filteredProducts = useMemo(() => {
-    const q = search.toLowerCase().trim();
-
-    if (!q) return products;
-
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.id.toLowerCase().includes(q) ||
-        p.barcode.includes(q)
+    return products.filter((item) =>
+      item.name.toLowerCase().includes(search.toLowerCase())
     );
   }, [products, search]);
 
-  function login() {
-    if (
-      username.trim() === "admin" &&
-      password === "1234"
-    ) {
-      setCashier("ADMIN");
-      setLoggedIn(true);
-      setUsername("");
-      setPassword("");
-    } else {
-      Alert.alert(
-        "Login Failed",
-        "Username: admin\nPassword: 1234"
-      );
-    }
-  }
+  const addToCart = (product) => {
+    setCart((current) => {
+      const found = current.find((item) => item.id === product.id);
 
-  function logout() {
-    setLoggedIn(false);
-    setPassword("");
-  }
-
-  function addToCart(product) {
-    if (product.stock <= 0) {
-      Alert.alert("Out of Stock", product.name);
-      return;
-    }
-
-    setCart((oldCart) => {
-      const existing = oldCart.find(
-        (item) => item.id === product.id
-      );
-
-      if (existing) {
-        if (existing.qty >= product.stock) {
-          Alert.alert("Stock", "Maximum stock reached.");
-          return oldCart;
-        }
-
-        return oldCart.map((item) =>
+      if (found) {
+        return current.map((item) =>
           item.id === product.id
             ? { ...item, qty: item.qty + 1 }
             : item
         );
       }
 
-      return [
-        ...oldCart,
-        {
-          id: product.id,
-          barcode: product.barcode,
-          name: product.name,
-          price: product.price,
-          qty: 1,
-        },
-      ];
+      return [...current, { ...product, qty: 1 }];
     });
-  }
+  };
 
-  function changeQuantity(id, amount) {
-    setCart((oldCart) =>
-      oldCart
-        .map((item) => {
-          if (item.id !== id) return item;
-
-          const product = products.find(
-            (p) => p.id === id
-          );
-
-          const nextQty = item.qty + amount;
-
-          if (
-            product &&
-            nextQty > product.stock
-          ) {
-            Alert.alert(
-              "Stock",
-              "Maximum stock reached."
-            );
-
-            return item;
-          }
-
-          return {
-            ...item,
-            qty: nextQty,
-          };
-        })
+  const changeQty = (id, amount) => {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.id === id
+            ? { ...item, qty: item.qty + amount }
+            : item
+        )
         .filter((item) => item.qty > 0)
     );
-  }
+  };
 
-  function removeCartItem(id) {
-    setCart((oldCart) =>
-      oldCart.filter((item) => item.id !== id)
-    );
-  }
+  const total = cart.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
 
-  function clearCart() {
-    setCart([]);
-  }
-
-  function completeSale() {
-    if (cart.length === 0) {
-      Alert.alert(
-        "Cart Empty",
-        "Please add products first."
-      );
+  const addProduct = () => {
+    if (!newName.trim() || !newPrice.trim()) {
+      Alert.alert("Error", "Product Name and Price ထည့်ပါ");
       return;
     }
 
-    const now = new Date();
-
-    const receipt = {
-      id: `R${Date.now()}`,
-      date: now.toLocaleDateString("en-GB"),
-      time: now.toLocaleTimeString("en-GB"),
-      items: cart,
-      subtotal,
-      total: subtotal,
-      payment,
-      passport,
-      nationality,
-      flightCode,
-      flightNumber,
-      memberId,
-      cashier,
-      shopName,
-    };
-
-    setProducts((oldProducts) =>
-      oldProducts.map((product) => {
-        const soldItem = cart.find(
-          (item) => item.id === product.id
-        );
-
-        if (!soldItem) return product;
-
-        return {
-          ...product,
-          stock: Math.max(
-            0,
-            product.stock - soldItem.qty
-          ),
-        };
-      })
-    );
-
-    setSales((oldSales) => [
-      ...oldSales,
-      receipt,
-    ]);
-
-    setSelectedReceipt(receipt);
-    setShowReceipt(true);
-
-    setCart([]);
-  }
-
-  function saveProduct() {
-    const id = newProduct.id.trim();
-    const barcode = newProduct.barcode.trim();
-    const name = newProduct.name.trim();
-
-    const price = Number(newProduct.price);
-    const stock = Number(newProduct.stock);
-
-    if (!id || !barcode || !name) {
-      Alert.alert(
-        "Error",
-        "Please fill Product Code, Barcode and Product Name."
-      );
-      return;
-    }
+    const price = Number(newPrice.replace(/[^0-9.]/g, ""));
 
     if (isNaN(price) || price <= 0) {
-      Alert.alert(
-        "Error",
-        "Please enter a valid price."
-      );
+      Alert.alert("Error", "Price မှန်ကန်စွာထည့်ပါ");
       return;
     }
 
-    if (isNaN(stock) || stock < 0) {
-      Alert.alert(
-        "Error",
-        "Please enter valid stock."
-      );
-      return;
-    }
-
-    if (products.some((p) => p.id === id)) {
-      Alert.alert(
-        "Error",
-        "Product code already exists."
-      );
-      return;
-    }
-
-    setProducts((old) => [
-      ...old,
+    setProducts((current) => [
+      ...current,
       {
-        id,
-        barcode,
-        name,
+        id: Date.now().toString(),
+        name: newName.trim(),
         price,
-        stock,
       },
     ]);
 
-    setNewProduct({
-      id: "",
-      barcode: "",
-      name: "",
-      price: "",
-      stock: "",
-    });
+    setNewName("");
+    setNewPrice("");
+    setModalVisible(false);
+  };
 
-    setShowAddProduct(false);
-  }
+  const checkout = () => {
+    if (cart.length === 0) {
+      Alert.alert("Cart Empty", "ပစ္စည်းတစ်ခုခု ရွေးပါ");
+      return;
+    }
 
-  function deleteProduct(id) {
     Alert.alert(
-      "Delete Product",
-      "Are you sure you want to delete this product?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setProducts((old) =>
-              old.filter((p) => p.id !== id)
-            );
-
-            setCart((old) =>
-              old.filter((p) => p.id !== id)
-            );
-          },
-        },
-      ]
+      "SALE COMPLETE",
+      `Total: ${money(total)}\nThank you!`
     );
-  }
 
-  function Receipt({ receipt }) {
-    if (!receipt) return null;
+    setCart([]);
+  };
 
-    return (
-      <View style={styles.receipt}>
-        <Text style={styles.receiptTitle}>
-          {receipt.shopName}
-        </Text>
-
-        <Text style={styles.center}>
-          DUTY FREE / TRAVEL RETAIL
-        </Text>
-
-        <Text style={styles.center}>
-          POS RECEIPT
-        </Text>
-
-        <View style={styles.dash} />
-
-        <Text>Cashier: {receipt.cashier}</Text>
-        <Text>Date: {receipt.date}</Text>
-        <Text>Time: {receipt.time}</Text>
-        <Text>Receipt: {receipt.id}</Text>
-
-        <View style={styles.dash} />
-
-        <Text>
-          Passport: {receipt.passport || "N/A"}
-        </Text>
-
-        <Text>
-          Nationality: {receipt.nationality || "N/A"}
-        </Text>
-
-        <Text>
-          Flight Code: {receipt.flightCode || "N/A"}
-        </Text>
-
-        <Text>
-          Flight No: {receipt.flightNumber || "N/A"}
-        </Text>
-
-        <View style={styles.dash} />
-
-        {receipt.items.map((item) => (
-          <View
-            key={item.id}
-            style={styles.receiptItem}
-          >
-            <Text style={styles.receiptBold}>
-              {item.name}
-            </Text>
-
-            <Text>
-              {item.qty} × {CURRENCY}
-              {money(item.price)}
-            </Text>
-
-            <Text>
-              {CURRENCY}
-              {money(item.qty * item.price)}
-            </Text>
-          </View>
-        ))}
-
-        <View style={styles.dash} />
-
-        <Text>
-          Items:{" "}
-          {receipt.items.reduce(
-            (sum, item) => sum + item.qty,
-            0
-          )}
-        </Text>
-
-        <Text style={styles.receiptTotal}>
-          TOTAL: {CURRENCY}
-          {money(receipt.total)}
-        </Text>
-
-        <Text>
-          Payment: {receipt.payment}
-        </Text>
-
-        <View style={styles.dash} />
-
-        <Text style={styles.center}>
-          Thank you for shopping with us.
-        </Text>
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.storeName}>AUNG</Text>
+        <Text style={styles.subtitle}>POS SYSTEM • SINGAPORE</Text>
       </View>
-    );
-  }
 
-  function POSPage() {
-    return (
-      <ScrollView
-        style={styles.body}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
-      >
-        <TextInput
-          style={styles.search}
-          placeholder="Search / Barcode"
-          value={search}
-          onChangeText={setSearch}
-          autoCorrect={false}
-        />
+      <TextInput
+        style={styles.search}
+        placeholder="Search product..."
+        value={search}
+        onChangeText={setSearch}
+      />
 
-        <Text style={styles.title}>
-          PRODUCTS
-        </Text>
+      <View style={styles.productSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>PRODUCTS</Text>
 
-        <View style={styles.productGrid}>
-          {filteredProducts.map((product) => (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.addButtonText}>+ ADD</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle={styles.productList}
+          renderItem={({ item }) => (
             <TouchableOpacity
-              key={product.id}
-              activeOpacity={0.7}
-              style={[
-                styles.product,
-                product.stock <= 0 &&
-                  styles.disabled,
-              ]}
-              onPress={() =>
-                addToCart(product)
-              }
+              style={styles.productCard}
+              onPress={() => addToCart(item)}
             >
-              <Text style={styles.productName}>
-                {product.name}
+              <Text style={styles.productName}>{item.name}</Text>
+
+              <Text style={styles.productPrice}>
+                {money(item.price)}
               </Text>
 
-              <Text style={styles.small}>
-                CODE: {product.id}
-              </Text>
-
-              <Text style={styles.small}>
-                STOCK: {product.stock}
-              </Text>
-
-              <Text style={styles.price}>
-                {CURRENCY}
-                {money(product.price)}
-              </Text>
+              <Text style={styles.tapText}>Tap to Add</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          )}
+        />
+      </View>
 
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            CUSTOMER / TRAVEL
-          </Text>
+      <View style={styles.cartSection}>
+        <Text style={styles.cartTitle}>CART</Text>
 
-          <Input
-            placeholder="Passport Number"
-            value={passport}
-            onChangeText={setPassport}
-          />
-
-          <Input
-            placeholder="Nationality"
-            value={nationality}
-            onChangeText={setNationality}
-          />
-
-          <Input
-            placeholder="Flight Code"
-            value={flightCode}
-            onChangeText={setFlightCode}
-          />
-
-          <Input
-            placeholder="Flight Number"
-            value={flightNumber}
-            onChangeText={setFlightNumber}
-          />
-
-          <Input
-            placeholder="Membership ID"
-            value={memberId}
-            onChangeText={setMemberId}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            CART ({totalItems})
-          </Text>
-
+        <ScrollView style={styles.cartList}>
           {cart.length === 0 ? (
-            <Text style={styles.empty}>
-              Cart is empty
+            <Text style={styles.emptyText}>
+              No products in cart
             </Text>
           ) : (
             cart.map((item) => (
-              <View
-                key={item.id}
-                style={styles.cartRow}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.productName}>
-                    {item.name}
-                  </Text>
+              <View style={styles.cartItem} key={item.id}>
+                <View style={styles.cartInfo}>
+                  <Text style={styles.cartName}>{item.name}</Text>
 
-                  <Text>
-                    {CURRENCY}
+                  <Text style={styles.cartPrice}>
                     {money(item.price)}
                   </Text>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.qtyButton}
-                  onPress={() =>
-                    changeQuantity(
-                      item.id,
-                      -1
-                    )
-                  }
-                >
-                  <Text style={styles.qtyButtonText}>
-                    −
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.qtyBox}>
+                  <TouchableOpacity
+                    style={styles.qtyButton}
+                    onPress={() => changeQty(item.id, -1)}
+                  >
+                    <Text style={styles.qtyText}>−</Text>
+                  </TouchableOpacity>
 
-                <Text style={styles.qty}>
-                  {item.qty}
-                </Text>
+                  <Text style={styles.qtyNumber}>{item.qty}</Text>
 
-                <TouchableOpacity
-                  style={styles.qtyButton}
-                  onPress={() =>
-                    changeQuantity(
-                      item.id,
-                      1
-                    )
-                  }
-                >
-                  <Text style={styles.qtyButtonText}>
-                    +
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    removeCartItem(item.id)
-                  }
-                >
-                  <Text style={styles.delete}>
-                    ×
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.qtyButton}
+                    onPress={() => changeQty(item.id, 1)}
+                  >
+                    <Text style={styles.qtyText}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           )}
+        </ScrollView>
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalText}>
-              TOTAL
-            </Text>
+        <View style={styles.totalBox}>
+          <Text style={styles.totalLabel}>TOTAL</Text>
 
-            <Text style={styles.total}>
-              {CURRENCY}
-              {money(subtotal)}
-            </Text>
-          </View>
-
-          <Text style={styles.title}>
-            PAYMENT
+          <Text style={styles.totalPrice}>
+            {money(total)}
           </Text>
-
-          <View style={styles.paymentRow}>
-            {["CASH", "CARD", "TRANSFER"].map(
-              (type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.payment,
-                    payment === type &&
-                      styles.paymentActive,
-                  ]}
-                  onPress={() =>
-                    setPayment(type)
-                  }
-                >
-                  <Text
-                    style={
-                      payment === type
-                        ? styles.white
-                        : styles.black
-                    }
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              )
-            )}
-          </View>
-
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={styles.complete}
-              onPress={completeSale}
-            >
-              <Text style={styles.white}>
-                COMPLETE SALE
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.clear}
-              onPress={clearCart}
-            >
-              <Text style={styles.white}>
-                CLEAR
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </ScrollView>
-    );
-  }
 
-  function StockPage() {
-    return (
-      <ScrollView
-        style={styles.body}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
-      >
         <TouchableOpacity
-          style={styles.primary}
-          onPress={() =>
-            setShowAddProduct(true)
-          }
+          style={styles.checkoutButton}
+          onPress={checkout}
         >
-          <Text style={styles.white}>
-            + ADD PRODUCT
+          <Text style={styles.checkoutText}>
+            ✓ CHECKOUT
           </Text>
         </TouchableOpacity>
 
-        {products.map((product) => (
-          <View
-            key={product.id}
-            style={styles.stockCard}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.productName}>
-                {product.name}
-              </Text>
-
-              <Text>
-                Code: {product.id}
-              </Text>
-
-              <Text style={styles.small}>
-                {product.barcode}
-              </Text>
-            </View>
-
-            <View style={styles.stockRight}>
-              <Text>
-                Stock: {product.stock}
-              </Text>
-
-              <Text style={styles.price}>
-                {CURRENCY}
-                {money(product.price)}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() =>
-                  deleteProduct(product.id)
-                }
-              >
-                <Text style={styles.delete}>
-                  DELETE
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-    );
-  }
-
-  function SalesPage() {
-    const totalSales = sales.reduce(
-      (sum, sale) => sum + sale.total,
-      0
-    );
-
-    return (
-      <ScrollView
-        style={styles.body}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.summary}>
-          <Text style={styles.summaryTitle}>
-            SALES SUMMARY
-          </Text>
-
-          <Text style={styles.summaryText}>
-            Transactions: {sales.length}
-          </Text>
-
-          <Text style={styles.summaryTotal}>
-            {CURRENCY}
-            {money(totalSales)}
-          </Text>
-        </View>
-
-        <Text style={styles.title}>
-          SALES HISTORY
-        </Text>
-
-        {sales.length === 0 ? (
-          <Text style={styles.empty}>
-            No sales yet.
-          </Text>
-        ) : (
-          [...sales]
-            .reverse()
-            .map((sale) => (
-              <TouchableOpacity
-                key={sale.id}
-                style={styles.saleCard}
-                onPress={() => {
-                  setSelectedReceipt(sale);
-                  setShowReceipt(true);
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.productName}>
-                    {sale.id}
-                  </Text>
-
-                  <Text>
-                    {sale.date} {sale.time}
-                  </Text>
-
-                  <Text>
-                    Cashier: {sale.cashier}
-                  </Text>
-                </View>
-
-                <Text style={styles.price}>
-                  {CURRENCY}
-                  {money(sale.total)}
-                </Text>
-              </TouchableOpacity>
-            ))
-        )}
-      </ScrollView>
-    );
-  }
-
-  function SettingsPage() {
-    return (
-      <ScrollView
-        style={styles.body}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            STORE SETTINGS
-          </Text>
-
-          <Input
-            placeholder="Shop Name"
-            value={shopName}
-            onChangeText={setShopName}
-          />
-
-          <Input
-            placeholder="Cashier Name"
-            value={cashier}
-            onChangeText={setCashier}
-          />
-
-          <TouchableOpacity
-            style={styles.primary}
-            onPress={() =>
-              Alert.alert(
-                "Saved",
-                "Settings saved successfully."
-              )
-            }
-          >
-            <Text style={styles.white}>
-              SAVE SETTINGS
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            SECURITY
-          </Text>
-
-          <TouchableOpacity
-            style={styles.logout}
-            onPress={logout}
-          >
-            <Text style={styles.white}>
-              LOGOUT
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  if (!loggedIn) {
-    return (
-      <SafeAreaView style={styles.loginScreen}>
-        <KeyboardAvoidingView
-          style={styles.loginKeyboard}
-          behavior={
-            Platform.OS === "ios"
-              ? "padding"
-              : "height"
-          }
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={() => setCart([])}
         >
-          <Text style={styles.loginTitle}>
-            {STORE_NAME}
+          <Text style={styles.clearText}>
+            CLEAR CART
           </Text>
+        </TouchableOpacity>
+      </View>
 
-          <Text style={styles.loginSub}>
-            OFFLINE POS SYSTEM
-          </Text>
-
-          <Input
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-          />
-
-          <Input
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={login}
-          >
-            <Text style={styles.white}>
-              LOGIN
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={styles.loginHint}>
-            Demo: admin / 1234
-          </Text>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.safe}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>
-              {shopName}
+        <View style={styles.modalBackground}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>
+              ADD PRODUCT
             </Text>
 
-            <Text style={styles.headerSub}>
-              CASHIER: {cashier}
-            </Text>
-          </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Product Name"
+              value={newName}
+              onChangeText={setNewName}
+            />
 
-          <Text style={styles.headerTotal}>
-            {CURRENCY}
-            {money(subtotal)}
-          </Text>
-        </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Price (S$)"
+              keyboardType="decimal-pad"
+              value={newPrice}
+              onChangeText={setNewPrice}
+            />
 
-        <View style={styles.pageContainer}>
-          {page === "POS" && <POSPage />}
-          {page === "STOCK" && <StockPage />}
-          {page === "SALES" && <SalesPage />}
-          {page === "SETTINGS" && (
-            <SettingsPage />
-          )}
-        </View>
-
-        <View style={styles.nav}>
-          <NavButton
-            icon="🛒"
-            text="POS"
-            active={page === "POS"}
-            onPress={() => setPage("POS")}
-          />
-
-          <NavButton
-            icon="📦"
-            text="Stock"
-            active={page === "STOCK"}
-            onPress={() =>
-              setPage("STOCK")
-            }
-          />
-
-          <NavButton
-            icon="📊"
-            text="Sales"
-            active={page === "SALES"}
-            onPress={() =>
-              setPage("SALES")
-            }
-          />
-
-          <NavButton
-            icon="⚙️"
-            text="Settings"
-            active={page === "SETTINGS"}
-            onPress={() =>
-              setPage("SETTINGS")
-            }
-          />
-        </View>
-
-        {/* RECEIPT MODAL */}
-        <Modal
-          visible={showReceipt}
-          animationType="slide"
-          onRequestClose={() =>
-            setShowReceipt(false)
-          }
-        >
-          <SafeAreaView style={styles.safe}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.title}>
-                RECEIPT
-              </Text>
-
-              <TouchableOpacity
-                onPress={() =>
-                  setShowReceipt(false)
-                }
-              >
-                <Text style={styles.close}>
-                  CLOSE
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={{
-                paddingBottom: 30,
-              }}
+            <TouchableOpacity
+              style={styles.saveProductButton}
+              onPress={addProduct}
             >
-              <Receipt
-                receipt={selectedReceipt}
-              />
+              <Text style={styles.saveProductText}>
+                SAVE PRODUCT
+              </Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.printButton}
-                onPress={() =>
-                  Alert.alert(
-                    "Print",
-                    "Printer connection will be added later."
-                  )
-                }
-              >
-                <Text style={styles.white}>
-                  🖨 PRINT RECEIPT
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
-
-        {/* ADD PRODUCT MODAL */}
-        <Modal
-          visible={showAddProduct}
-          transparent
-          animationType="fade"
-          onRequestClose={() =>
-            setShowAddProduct(false)
-          }
-        >
-          <KeyboardAvoidingView
-            style={styles.overlay}
-            behavior={
-              Platform.OS === "ios"
-                ? "padding"
-                : "height"
-            }
-          >
-            <ScrollView
-              contentContainerStyle={
-                styles.modalScroll
-              }
-              keyboardShouldPersistTaps="handled"
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setModalVisible(false)}
             >
-              <View style={styles.addModal}>
-                <Text style={styles.title}>
-                  ADD PRODUCT
-                </Text>
-
-                <Input
-                  placeholder="Product Code"
-                  value={newProduct.id}
-                  onChangeText={(v) =>
-                    setNewProduct((old) => ({
-                      ...old,
-                      id: v,
-                    }))
-                  }
-                />
-
-                <Input
-                  placeholder="Barcode"
-                  value={newProduct.barcode}
-                  onChangeText={(v) =>
-                    setNewProduct((old) => ({
-                      ...old,
-                      barcode: v,
-                    }))
-                  }
-                  keyboardType="numeric"
-                />
-
-                <Input
-                  placeholder="Product Name"
-                  value={newProduct.name}
-                  onChangeText={(v) =>
-                    setNewProduct((old) => ({
-                      ...old,
-                      name: v,
-                    }))
-                  }
-                />
-
-                <Input
-                  placeholder="Price"
-                  value={newProduct.price}
-                  onChangeText={(v) =>
-                    setNewProduct((old) => ({
-                      ...old,
-                      price: v,
-                    }))
-                  }
-                  keyboardType="decimal-pad"
-                />
-
-                <Input
-                  placeholder="Stock"
-                  value={newProduct.stock}
-                  onChangeText={(v) =>
-                    setNewProduct((old) => ({
-                      ...old,
-                      stock: v,
-                    }))
-                  }
-                  keyboardType="numeric"
-                />
-
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={styles.complete}
-                    onPress={saveProduct}
-                  >
-                    <Text style={styles.white}>
-                      ADD PRODUCT
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.clear}
-                    onPress={() =>
-                      setShowAddProduct(false)
-                    }
-                  >
-                    <Text style={styles.white}>
-                      CANCEL
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </Modal>
-      </KeyboardAvoidingView>
+              <Text style={styles.cancelText}>
+                CANCEL
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-/* INPUT COMPONENT */
-
-function Input({
-  placeholder,
-  value,
-  onChangeText,
-  keyboardType = "default",
-  secureTextEntry = false,
-}) {
-  return (
-    <TextInput
-      style={styles.input}
-      placeholder={placeholder}
-      placeholderTextColor="#888"
-      value={value}
-      onChangeText={onChangeText}
-      keyboardType={keyboardType}
-      secureTextEntry={secureTextEntry}
-      autoCapitalize="none"
-      editable={true}
-    />
-  );
-}
-
-/* NAV BUTTON */
-
-function NavButton({
-  icon,
-  text,
-  active,
-  onPress,
-}) {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.navButton,
-        active && styles.navButtonActive,
-      ]}
-      onPress={onPress}
-    >
-      <Text style={styles.navIcon}>
-        {icon}
-      </Text>
-
-      <Text
-        style={
-          active
-            ? styles.navTextActive
-            : styles.navText
-        }
-      >
-        {text}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-/* STYLES */
-
 const styles = StyleSheet.create({
-  safe: {
+  container: {
     flex: 1,
-    backgroundColor: "#f2f3f5",
-  },
-
-  pageContainer: {
-    flex: 1,
+    backgroundColor: "#f2f4f7",
   },
 
   header: {
-    backgroundColor: "#111",
-    padding: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
+    backgroundColor: "#243861",
+    paddingVertical: 16,
     alignItems: "center",
   },
 
-  headerTitle: {
-    color: "#fff",
-    fontSize: 21,
-    fontWeight: "900",
+  storeName: {
+    color: "#ffffff",
+    fontSize: 26,
+    fontWeight: "bold",
   },
 
-  headerSub: {
-    color: "#aaa",
+  subtitle: {
+    color: "#cbd5e1",
     fontSize: 11,
-    marginTop: 3,
-  },
-
-  headerTotal: {
-    color: "#fff",
-    fontSize: 19,
-    fontWeight: "800",
-  },
-
-  body: {
-    flex: 1,
-    paddingHorizontal: 12,
-  },
-
-  scrollContent: {
-    paddingTop: 12,
-    paddingBottom: 100,
+    marginTop: 4,
+    letterSpacing: 1.5,
   },
 
   search: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#ffffff",
+    margin: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 11,
     borderRadius: 10,
-    paddingHorizontal: 13,
-    paddingVertical: 12,
     fontSize: 16,
-    marginBottom: 12,
-    color: "#111",
-  },
-
-  title: {
-    fontSize: 18,
-    fontWeight: "900",
-    marginBottom: 12,
-    color: "#111",
-  },
-
-  productGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-
-  product: {
-    width: "48.5%",
-    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+    borderColor: "#d9dee7",
   },
 
-  disabled: {
-    opacity: 0.4,
+  productSection: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#243861",
+  },
+
+  addButton: {
+    backgroundColor: "#243861",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  addButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
+
+  productList: {
+    paddingBottom: 8,
+  },
+
+  productCard: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    margin: 5,
+    minHeight: 100,
+    borderRadius: 12,
+    padding: 12,
+    justifyContent: "space-between",
+    elevation: 2,
   },
 
   productName: {
-    fontWeight: "800",
-    fontSize: 14,
-    color: "#111",
-  },
-
-  small: {
-    fontSize: 10,
-    color: "#777",
-    marginTop: 3,
-  },
-
-  price: {
     fontSize: 16,
-    fontWeight: "900",
-    marginVertical: 5,
-    color: "#111",
+    fontWeight: "bold",
+    color: "#1c2638",
   },
 
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 14,
-    marginVertical: 7,
-  },
-
-  input: {
-    backgroundColor: "#fafafa",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 10,
+  productPrice: {
+    color: "#16a34a",
     fontSize: 16,
-    color: "#111",
-    minHeight: 48,
+    fontWeight: "bold",
   },
 
-  cartRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingVertical: 11,
+  tapText: {
+    color: "#94a3b8",
+    fontSize: 11,
   },
 
-  qtyButton: {
-    backgroundColor: "#eee",
-    borderRadius: 6,
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 5,
+  cartSection: {
+    backgroundColor: "#ffffff",
+    borderTopWidth: 1,
+    borderColor: "#d9dee7",
+    padding: 12,
+    maxHeight: 300,
   },
 
-  qtyButtonText: {
+  cartTitle: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "bold",
+    color: "#243861",
+    marginBottom: 5,
   },
 
-  qty: {
-    fontWeight: "800",
-    minWidth: 25,
+  cartList: {
+    maxHeight: 110,
+  },
+
+  emptyText: {
     textAlign: "center",
-    marginLeft: 5,
-  },
-
-  delete: {
-    color: "#c00",
-    fontWeight: "900",
-    fontSize: 13,
-    marginLeft: 10,
-  },
-
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    color: "#94a3b8",
     paddingVertical: 15,
   },
 
-  totalText: {
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  total: {
-    fontSize: 22,
-    fontWeight: "900",
-  },
-
-  paymentRow: {
+  cartItem: {
     flexDirection: "row",
-    marginBottom: 12,
-  },
-
-  payment: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
     alignItems: "center",
-    marginHorizontal: 3,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderColor: "#eef1f6",
   },
 
-  paymentActive: {
-    backgroundColor: "#111",
-    borderColor: "#111",
+  cartInfo: {
+    flex: 1,
   },
 
-  actionRow: {
+  cartName: {
+    fontWeight: "bold",
+    color: "#1c2638",
+  },
+
+  cartPrice: {
+    color: "#64748b",
+    fontSize: 13,
+  },
+
+  qtyBox: {
     flexDirection: "row",
-  },
-
-  complete: {
-    flex: 1,
-    backgroundColor: "#111",
-    borderRadius: 9,
-    padding: 14,
-    alignItems: "center",
-    marginRight: 4,
-  },
-
-  clear: {
-    backgroundColor: "#777",
-    borderRadius: 9,
-    padding: 14,
-    alignItems: "center",
-    minWidth: 100,
-    marginLeft: 4,
-  },
-
-  primary: {
-    backgroundColor: "#111",
-    borderRadius: 9,
-    padding: 14,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-
-  logout: {
-    backgroundColor: "#b00020",
-    borderRadius: 9,
-    padding: 14,
     alignItems: "center",
   },
 
-  white: {
-    color: "#fff",
-    fontWeight: "900",
+  qtyButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#e8edf5",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  black: {
-    color: "#111",
-    fontWeight: "700",
+  qtyText: {
+    fontSize: 19,
+    fontWeight: "bold",
+    color: "#243861",
   },
 
-  empty: {
+  qtyNumber: {
+    width: 32,
     textAlign: "center",
-    color: "#888",
+    fontWeight: "bold",
+  },
+
+  totalBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+  },
+
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#243861",
+  },
+
+  totalPrice: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#16a34a",
+  },
+
+  checkoutButton: {
+    backgroundColor: "#16a34a",
+    padding: 13,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  checkoutText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  clearButton: {
+    padding: 9,
+    alignItems: "center",
+  },
+
+  clearText: {
+    color: "#dc2626",
+    fontWeight: "bold",
+  },
+
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: 25,
+  },
+
+  modalBox: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
     padding: 20,
   },
 
-  stockCard: {
-    backgroundColor: "#fff",
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#243861",
+    marginBottom: 18,
+    textAlign: "center",
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#d9dee7",
     borderRadius: 10,
-    padding: 13,
-    marginBottom: 9,
-    flexDirection: "row",
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 16,
   },
 
-  stockRight: {
-    alignItems: "flex-end",
-    marginLeft: 10,
-  },
-
-  summary: {
-    backgroundColor: "#111",
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 15,
-  },
-
-  summaryTitle: {
-    color: "#fff",
-    fontWeight: "900",
-    fontSize: 17,
-  },
-
-  summaryText: {
-    color: "#ddd",
-    marginTop: 8,
-  },
-
-  summaryTotal: {
-    color: "#fff",
-    fontSize: 25,
-    fontWeight: "900",
-    marginTop: 8,
-  },
-
-  saleCard: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
+  saveProductButton: {
+    backgroundColor: "#243861",
     padding: 14,
-    marginBottom: 9,
-    flexDirection: "row",
+    borderRadius: 10,
     alignItems: "center",
   },
 
-  nav: {
-    height: 70,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
-    flexDirection
+  saveProductText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
+
+  cancelButton: {
+    padding: 13,
+    alignItems: "center",
+  },
+
+  cancelText: {
+    color: "#dc2626",
+    fontWeight: "bold",
+  },
+});
