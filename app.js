@@ -1,1674 +1,1841 @@
-let products = JSON.parse(localStorage.getItem("lk_products")) || [];
-let cart = [];
-let sales = JSON.parse(localStorage.getItem("lk_sales")) || [];
-
-let editingProduct = null;
-
-
-/* ================= SETTINGS ================= */
-
-const defaultSettings = {
-  shopName: "LOTLTD.",
-  shopType: "LSTORE",
-  shopType: "Orchard",
-  shopAddress: "#02-167 Singapore",
-  posNumber: "217",
-  cashierNumber: "R03090",
-  cashierName: "CASHIER",
-  currency: "SGD",
-
-  reprintedBy: "R03090",
-  passportNumber: "****4600",
-  nationality: "MM",
-  flightCode: "Z6",
-  flightNumber: "2",
-  lotteMembership: "118296328",
-
-  gst: "0",
-  memberTier: "Platinum",
-  footerMessage: "Thank you for shopping with us",
-  barcodeText: "LOT2172617211466"
-};
-
-
-let settings =
-  JSON.parse(localStorage.getItem("lk_settings"))
-  || defaultSettings;
-
-
-/* ================= MONEY ================= */
-
-function money(value){
-
-  let currency =
-    document.getElementById("currency")
-      ? document.getElementById("currency").value
-      : settings.currency;
-
-  return `${currency} ${Number(value).toFixed(2)}`;
-}
-
-
-/* ================= LOGIN ================= */
-
-function login(){
-
-  const user =
-    document.getElementById("loginUser").value;
-
-  const pass =
-    document.getElementById("loginPass").value;
-
-  if(user === "admin" && pass === "1234"){
-
-    document
-      .getElementById("loginPage")
-      .classList
-      .add("hidden");
-
-    document
-      .getElementById("appPage")
-      .classList
-      .remove("hidden");
-
-    initApp();
-
-  }else{
-
-    alert("Username or Password incorrect!");
-
-  }
-
-}
-
-
-function logout(){
-
-  document
-    .getElementById("appPage")
-    .classList
-    .add("hidden");
-
-  document
-    .getElementById("loginPage")
-    .classList
-    .remove("hidden");
-
-}
-
-
-/* ================= INIT ================= */
-
-function initApp(){
-
-  loadSettingsToForm();
-
-  if(products.length === 0){
-
-    restoreDemoProducts();
-
-  }
-
-  renderProducts();
-  renderCart();
-  renderProductManagement();
-  renderReport();
-
-}
-
-
-/* ================= PAGE NAV ================= */
-
-function showPage(page,button){
-
-  document
-    .querySelectorAll(".page")
-    .forEach(p => p.classList.add("hidden"));
-
-  document
-    .getElementById(page)
-    .classList
-    .remove("hidden");
-
-
-  document
-    .querySelectorAll(".nav")
-    .forEach(btn => btn.classList.remove("active"));
-
-  if(button){
-
-    button.classList.add("active");
-
-  }
-
-
-  if(page === "sale"){
-
-    renderProducts();
-    renderCart();
-
-  }
-
-
-  if(page === "products"){
-
-    renderProductManagement();
-
-  }
-
-
-  if(page === "report"){
-
-    renderReport();
-
-  }
-
-
-  if(page === "settings"){
-
-    loadSettingsToForm();
-
-  }
-
-}
-
-
-/* ================= PRODUCTS ================= */
-
-function restoreDemoProducts(){
-
-  products = [
-
-    {
-      id: Date.now() + 1,
-      code: "B10135",
-      name: "Aberfeldy All Ven",
-      price: 204.80,
-      stock: 10,
-      description: "750ml Alcohol Collection"
-    },
-
-    {
-      id: Date.now() + 2,
-      code: "B20012",
-      name: "Alice Low Chive IP",
-      price: 250.00,
-      stock: 1,
-      description: "Suntory Hibiki"
-    },
-
-    {
-      id: Date.now() + 3,
-      code: "W30001",
-      name: "Red Wine Premium",
-      price: 85.00,
-      stock: 20,
-      description: "Premium Red Wine"
-    },
-
-    {
-      id: Date.now() + 4,
-      code: "W40001",
-      name: "Whisky Gold",
-      price: 120.00,
-      stock: 15,
-      description: "Premium Whisky"
-    }
-
-  ];
-
-
-  saveProducts();
-
-  renderProducts();
-  renderProductManagement();
-
-  alert("Demo Products Restored!");
-
-}
-
-
-function saveProducts(){
-
-  localStorage.setItem(
-    "lk_products",
-    JSON.stringify(products)
-  );
-
-}
-
-
-function renderProducts(){
-
-  const container =
-    document.getElementById("saleProducts");
-
-  if(!container) return;
-
-
-  const search =
-    document
-      .getElementById("searchProduct")
-      .value
-      .toLowerCase();
-
-
-  let filtered =
-    products.filter(product =>
-      product.name.toLowerCase().includes(search) ||
-      product.code.toLowerCase().includes(search)
-    );
-
-
-  if(filtered.length === 0){
-
-    container.innerHTML =
-      "<p>No products found.</p>";
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-    filtered.map(product => `
-
-      <div class="saleProduct">
-
-        <h4>${escapeHtml(product.name)}</h4>
-
-        <small>
-          Code: ${escapeHtml(product.code)}
-        </small>
-
-        <small>
-          Stock: ${product.stock}
-        </small>
-
-        <b>${money(product.price)}</b>
-
-        <button onclick="addToCart(${product.id})">
-          Add to Cart
-        </button>
-
-      </div>
-
-    `).join("");
-
-}
-
-
-function addToCart(id){
-
-  const product =
-    products.find(p => p.id === id);
-
-  if(!product) return;
-
-
-  let item =
-    cart.find(item => item.id === id);
-
-
-  if(item){
-
-    if(item.qty < product.stock){
-
-      item.qty++;
-
-    }else{
-
-      alert("Not enough stock!");
-
-      return;
-
-    }
-
-  }else{
-
-    if(product.stock <= 0){
-
-      alert("Out of stock!");
-
-      return;
-
-    }
-
-
-    cart.push({
-
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      price: Number(product.price),
-      qty: 1
-
+import React, { useMemo, useState } from "react";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+  Modal,
+  Alert,
+  StyleSheet,
+} from "react-native";
+
+const STORE_NAME = "LIQUOR TR";
+const CURRENCY = "S$";
+
+const INITIAL_PRODUCTS = [
+  {
+    id: "B10135",
+    barcode: "2072984745",
+    name: "Macallan Colour Collection 15Y 700ml",
+    price: 204.8,
+    stock: 20,
+  },
+  {
+    id: "B20012",
+    barcode: "2073616340",
+    name: "Suntory Hibiki 12YO 700ml",
+    price: 250,
+    stock: 10,
+  },
+  {
+    id: "B30001",
+    barcode: "5000267024232",
+    name: "Johnnie Walker Black Label 1L",
+    price: 80,
+    stock: 50,
+  },
+  {
+    id: "B30002",
+    barcode: "5000267014202",
+    name: "Johnnie Walker Red Label 1L",
+    price: 55,
+    stock: 50,
+  },
+  {
+    id: "B30003",
+    barcode: "080432400120",
+    name: "Chivas Regal 12Y 1L",
+    price: 75,
+    stock: 30,
+  },
+];
+
+export default function App() {
+  const [page, setPage] = useState("POS");
+
+  const [products, setProducts] =
+    useState(INITIAL_PRODUCTS);
+
+  const [cart, setCart] = useState([]);
+  const [sales, setSales] = useState([]);
+
+  const [search, setSearch] = useState("");
+
+  const [payment, setPayment] =
+    useState("CASH");
+
+  const [passport, setPassport] =
+    useState("");
+
+  const [nationality, setNationality] =
+    useState("MM");
+
+  const [flightCode, setFlightCode] =
+    useState("");
+
+  const [flightNumber, setFlightNumber] =
+    useState("");
+
+  const [memberId, setMemberId] =
+    useState("");
+
+  const [cashier, setCashier] =
+    useState("ADMIN");
+
+  const [shopName, setShopName] =
+    useState(STORE_NAME);
+
+  const [showReceipt, setShowReceipt] =
+    useState(false);
+
+  const [selectedReceipt, setSelectedReceipt] =
+    useState(null);
+
+  const [showLogin, setShowLogin] =
+    useState(false);
+
+  const [loggedIn, setLoggedIn] =
+    useState(true);
+
+  const [username, setUsername] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [showAddProduct, setShowAddProduct] =
+    useState(false);
+
+  const [newProduct, setNewProduct] =
+    useState({
+      id: "",
+      barcode: "",
+      name: "",
+      price: "",
+      stock: "",
     });
 
-  }
-
-
-  renderCart();
-
-}
-
-
-function renderCart(){
-
-  const container =
-    document.getElementById("cartList");
-
-  if(!container) return;
-
-
-  if(cart.length === 0){
-
-    container.innerHTML =
-      "<p>Your cart is empty.</p>";
-
-  }else{
-
-    container.innerHTML =
-      cart.map(item => `
-
-        <div class="cartItem">
-
-          <div>
-
-            <div class="cartName">
-              ${escapeHtml(item.name)}
-            </div>
-
-            <div class="cartPrice">
-              ${item.qty} × ${money(item.price)}
-              = ${money(item.price * item.qty)}
-            </div>
-
-          </div>
-
-
-          <div class="cartControls">
-
-            <button
-              class="qtyBtn"
-              onclick="changeQty(${item.id},-1)"
-            >
-              −
-            </button>
-
-
-            <b>${item.qty}</b>
-
-
-            <button
-              class="qtyBtn"
-              onclick="changeQty(${item.id},1)"
-            >
-              +
-            </button>
-
-
-            <button
-              class="removeBtn"
-              onclick="removeCartItem(${item.id})"
-            >
-              ×
-            </button>
-
-          </div>
-
-        </div>
-
-      `).join("");
-
-  }
-
-
-  const subtotal =
-    cart.reduce(
-      (sum,item) =>
+  const subtotal = useMemo(() => {
+    return cart.reduce(
+      (sum, item) =>
         sum + item.price * item.qty,
       0
     );
-
-
-  const discount =
-    Number(
-      document.getElementById("discount")?.value
-      || 0
-    );
-
-
-  const total =
-    Math.max(
-      0,
-      subtotal - discount
-    );
-
-
-  document.getElementById("subtotal")
-    .textContent =
-    money(subtotal);
-
-
-  document.getElementById("discountView")
-    .textContent =
-    money(discount);
-
-
-  document.getElementById("grandTotal")
-    .textContent =
-    money(total);
-
-}
-
-
-function changeQty(id,change){
-
-  const item =
-    cart.find(item => item.id === id);
-
-  const product =
-    products.find(product => product.id === id);
-
-  if(!item || !product) return;
-
-
-  const newQty =
-    item.qty + change;
-
-
-  if(newQty <= 0){
-
-    removeCartItem(id);
-
-    return;
-
-  }
-
-
-  if(newQty > product.stock){
-
-    alert("Not enough stock!");
-
-    return;
-
-  }
-
-
-  item.qty = newQty;
-
-  renderCart();
-
-}
-
-
-function removeCartItem(id){
-
-  cart =
-    cart.filter(item => item.id !== id);
-
-  renderCart();
-
-}
-
-
-function clearCart(){
-
-  if(cart.length === 0) return;
-
-  if(confirm("Clear all items?")){
-
-    cart = [];
-
-    document.getElementById("discount").value = 0;
-
-    renderCart();
-
-  }
-
-}
-
-
-/* ================= PRODUCT MANAGEMENT ================= */
-
-function addProduct(){
-
-  editingProduct = null;
-
-  document
-    .getElementById("productForm")
-    .classList
-    .remove("hidden");
-
-
-  document.getElementById("editCode").value = "";
-  document.getElementById("editName").value = "";
-  document.getElementById("editPrice").value = "";
-  document.getElementById("editStock").value = "";
-  document.getElementById("editDescription").value = "";
-
-}
-
-
-function cancelProduct(){
-
-  editingProduct = null;
-
-  document
-    .getElementById("productForm")
-    .classList
-    .add("hidden");
-
-}
-
-
-function saveProduct(){
-
-  const code =
-    document.getElementById("editCode").value.trim();
-
-  const name =
-    document.getElementById("editName").value.trim();
-
-  const price =
-    Number(
-      document.getElementById("editPrice").value
-    );
-
-  const stock =
-    Number(
-      document.getElementById("editStock").value
-    );
-
-  const description =
-    document
-      .getElementById("editDescription")
-      .value
-      .trim();
-
-
-  if(!code || !name || isNaN(price)){
-
-    alert("Please fill Product Code, Name and Price.");
-
-    return;
-
-  }
-
-
-  if(editingProduct){
-
-    const product =
-      products.find(
-        p => p.id === editingProduct
-      );
-
-    if(product){
-
-      product.code = code;
-      product.name = name;
-      product.price = price;
-      product.stock = stock;
-      product.description = description;
-
-    }
-
-  }else{
-
-    products.push({
-
-      id: Date.now(),
-
-      code,
-      name,
-      price,
-      stock,
-      description
-
-    });
-
-  }
-
-
-  saveProducts();
-
-  cancelProduct();
-
-  renderProducts();
-  renderProductManagement();
-  renderReport();
-
-}
-
-
-function editProduct(id){
-
-  const product =
-    products.find(p => p.id === id);
-
-  if(!product) return;
-
-
-  editingProduct = id;
-
-
-  document
-    .getElementById("productForm")
-    .classList
-    .remove("hidden");
-
-
-  document.getElementById("editCode").value =
-    product.code;
-
-  document.getElementById("editName").value =
-    product.name;
-
-  document.getElementById("editPrice").value =
-    product.price;
-
-  document.getElementById("editStock").value =
-    product.stock;
-
-  document.getElementById("editDescription").value =
-    product.description || "";
-
-}
-
-
-function deleteProduct(id){
-
-  if(!confirm("Delete this product?")) return;
-
-
-  products =
-    products.filter(p => p.id !== id);
-
-  cart =
-    cart.filter(p => p.id !== id);
-
-
-  saveProducts();
-
-  renderProducts();
-  renderCart();
-  renderProductManagement();
-  renderReport();
-
-}
-
-
-function renderProductManagement(){
-
-  const container =
-    document.getElementById("productList");
-
-  if(!container) return;
-
-
-  if(products.length === 0){
-
-    container.innerHTML =
-      "<p>No products.</p>";
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-    products.map(product => `
-
-      <div class="productItem">
-
-        <div class="productInfo">
-
-          <b>
-            ${escapeHtml(product.name)}
-          </b>
-
-          <span>
-            ${escapeHtml(product.code)}
-            •
-            ${money(product.price)}
-            •
-            Stock: ${product.stock}
-          </span>
-
-        </div>
-
-
-        <div class="productActions">
-
-          <button
-            class="editBtn"
-            onclick="editProduct(${product.id})"
-          >
-            Edit
-          </button>
-
-          <button
-            class="deleteBtn"
-            onclick="deleteProduct(${product.id})"
-          >
-            Delete
-          </button>
-
-        </div>
-
-      </div>
-
-    `).join("");
-
-}
-
-
-/* ================= CHECKOUT ================= */
-
-function checkout(){
-
-  if(cart.length === 0){
-
-    alert("Cart is empty!");
-
-    return;
-
-  }
-
-
-  const subtotal =
-    cart.reduce(
-      (sum,item) =>
-        sum + item.price * item.qty,
+  }, [cart]);
+
+  const totalItems = useMemo(() => {
+    return cart.reduce(
+      (sum, item) => sum + item.qty,
       0
     );
+  }, [cart]);
 
+  const filteredProducts = useMemo(() => {
+    const q = search.toLowerCase().trim();
 
-  const discount =
-    Number(
-      document.getElementById("discount").value
-      || 0
+    if (!q) return products;
+
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q) ||
+        p.barcode.includes(q)
     );
+  }, [products, search]);
 
+  function money(value) {
+    return Number(value).toFixed(2);
+  }
 
-  const gstPercent =
-    Number(settings.gst || 0);
+  function addToCart(product) {
+    if (product.stock <= 0) {
+      Alert.alert(
+        "Out of Stock",
+        product.name
+      );
+      return;
+    }
 
-
-  const afterDiscount =
-    Math.max(0,subtotal - discount);
-
-
-  const gstAmount =
-    afterDiscount * gstPercent / 100;
-
-
-  const total =
-    afterDiscount + gstAmount;
-
-
-  /* reduce stock */
-
-  cart.forEach(item => {
-
-    const product =
-      products.find(
-        product =>
-          product.id === item.id
+    setCart((oldCart) => {
+      const existing = oldCart.find(
+        (item) => item.id === product.id
       );
 
-    if(product){
+      if (existing) {
+        if (existing.qty >= product.stock) {
+          Alert.alert(
+            "Stock",
+            "Not enough stock."
+          );
 
-      product.stock =
-        Math.max(
-          0,
-          product.stock - item.qty
+          return oldCart;
+        }
+
+        return oldCart.map((item) =>
+          item.id === product.id
+            ? {
+                ...item,
+                qty: item.qty + 1,
+              }
+            : item
+        );
+      }
+
+      return [
+        ...oldCart,
+        {
+          id: product.id,
+          barcode: product.barcode,
+          name: product.name,
+          price: product.price,
+          qty: 1,
+        },
+      ];
+    });
+  }
+
+  function changeQuantity(id, amount) {
+    setCart((oldCart) =>
+      oldCart
+        .map((item) => {
+          if (item.id !== id) {
+            return item;
+          }
+
+          const product =
+            products.find(
+              (p) => p.id === id
+            );
+
+          const next =
+            item.qty + amount;
+
+          if (next > product.stock) {
+            Alert.alert(
+              "Stock",
+              "Maximum stock reached."
+            );
+
+            return item;
+          }
+
+          return {
+            ...item,
+            qty: next,
+          };
+        })
+        .filter(
+          (item) => item.qty > 0
+        )
+    );
+  }
+
+  function removeCartItem(id) {
+    setCart((oldCart) =>
+      oldCart.filter(
+        (item) => item.id !== id
+      )
+    );
+  }
+
+  function clearCart() {
+    setCart([]);
+  }
+
+  function makeReceipt() {
+    const now = new Date();
+
+    return {
+      id: `D${Date.now()}`,
+      date: now.toLocaleDateString(
+        "en-GB"
+      ),
+      time: now.toLocaleTimeString(
+        "en-GB"
+      ),
+      items: cart.map((x) => ({
+        ...x,
+      })),
+      subtotal,
+      total: subtotal,
+      payment,
+      passport,
+      nationality,
+      flightCode,
+      flightNumber,
+      memberId,
+      cashier,
+      shopName,
+    };
+  }
+
+  function completeSale() {
+    if (!cart.length) {
+      Alert.alert(
+        "Cart Empty",
+        "Please add products first."
+      );
+
+      return;
+    }
+
+    const receipt = makeReceipt();
+
+    setProducts((oldProducts) =>
+      oldProducts.map((product) => {
+        const sold = cart.find(
+          (item) =>
+            item.id === product.id
         );
 
+        if (!sold) return product;
+
+        return {
+          ...product,
+          stock:
+            product.stock -
+            sold.qty,
+        };
+      })
+    );
+
+    setSales((oldSales) => [
+      ...oldSales,
+      receipt,
+    ]);
+
+    setSelectedReceipt(receipt);
+    setShowReceipt(true);
+    setCart([]);
+  }
+
+  function addProduct() {
+    const id =
+      newProduct.id.trim();
+
+    const name =
+      newProduct.name.trim();
+
+    const barcode =
+      newProduct.barcode.trim();
+
+    const price =
+      Number(newProduct.price);
+
+    const stock =
+      Number(newProduct.stock);
+
+    if (
+      !id ||
+      !name ||
+      !barcode ||
+      !price ||
+      stock < 0
+    ) {
+      Alert.alert(
+        "Error",
+        "Fill all product information."
+      );
+
+      return;
     }
 
-  });
-
-
-  saveProducts();
-
-
-  const sale = {
-
-    id: Date.now(),
-
-    date:
-      new Date().toLocaleString(),
-
-    items:
-      JSON.parse(JSON.stringify(cart)),
-
-    subtotal,
-    discount,
-    gstAmount,
-    total,
-
-    payment:
-      document
-        .getElementById("paymentMethod")
-        .value
-
-  };
-
-
-  sales.unshift(sale);
-
-
-  localStorage.setItem(
-    "lk_sales",
-    JSON.stringify(sales)
-  );
-
-
-  generateReceipt(sale);
-
-
-  document
-    .getElementById("receiptModal")
-    .classList
-    .remove("hidden");
-
-
-  cart = [];
-
-  document.getElementById("discount").value = 0;
-
-
-  renderCart();
-  renderProducts();
-  renderProductManagement();
-  renderReport();
-
-}
-
-
-/* ================= RECEIPT ================= */
-
-function generateReceipt(sale){
-
-  const receipt =
-    document.getElementById("receipt");
-
-
-  const now =
-    new Date();
-
-
-  const date =
-    now.toLocaleDateString();
-
-
-  const time =
-    now.toLocaleTimeString();
-
-
-  const receiptNo =
-    "E" +
-    String(sale.id)
-      .slice(-10);
-
-
-  let itemHtml = "";
-
-
-  sale.items.forEach(item => {
-
-    itemHtml += `
-
-      <div class="receiptItem">
-
-        <div>
-          ${escapeHtml(item.code)}
-          :
-          ${escapeHtml(item.name)}
-        </div>
-
-        <div class="receiptRow">
-          <span>
-            ${item.qty}
-          </span>
-
-          <span>
-            ${Number(item.price).toFixed(2)}
-          </span>
-
-          <span>
-            ${(item.price * item.qty).toFixed(2)}
-          </span>
-        </div>
-
-      </div>
-
-    `;
-
-  });
-
-
-  receipt.innerHTML = `
-
-    <div class="receiptCenter">
-
-      <b>
-        ${escapeHtml(settings.shopName)}
-      </b>
-
-      <br>
-
-      ${escapeHtml(settings.shopType)}
-
-      <br>
-
-      ${escapeHtml(settings.shopAddress)}
-
-      <br>
-
-      GST Reg No.201047172R
-
-      </div>
-
-
-    <div class="receiptRow">
-
-      <span>
-        POS : ${escapeHtml(settings.posNumber)}
-      </span>
-
-      <span>
-        Date : ${date}
-      </span>
-
-    </div>
-
-
-    <div class="receiptRow">
-
-      <span>
-        Cashier : ${escapeHtml(settings.cashierNumber)}
-      </span>
-
-      <span>
-        Time : ${time}
-      </span>
-
-    </div>
-
-
-    <div>
-      Cashier Name :
-      ${escapeHtml(settings.cashierName)}
-    </div>
-
-
-    <div>
-      Receipt No. :
-      ${receiptNo}
-    </div>
-
-
-    <div>
-      Received No. :
-      ${sale.id}
-    </div>
-
-
-    <div class="receiptTitle">
-
-      *****DUPLICATE*****
-
-    </div>
-
-
-    <div>
-
-      Reprinted by :
-      ${escapeHtml(settings.reprintedBy)}
-
-    </div>
-
-
-    <div>
-
-      Reprinted Date Time :
-      ${date} ${time}
-
-    </div>
-
-
-    <br>
-
-
-    <div>
-
-      Passport No. :
-      ${escapeHtml(settings.passportNumber)}
-
-    </div>
-
-
-    <div>
-
-      Nationality :
-      ${escapeHtml(settings.nationality)}
-
-    </div>
-
-
-    <div>
-
-      Flight Code :
-      ${escapeHtml(settings.flightCode)}
-
-    </div>
-
-
-    <div>
-
-      Flight Number :
-      ${escapeHtml(settings.flightNumber)}
-
-    </div>
-
-
-    <div>
-
-      Lotte Membership ID :
-      ${escapeHtml(settings.lotteMembership)}
-
-    </div>
-
-
-    <br>
-
-
-    <div class="receiptRow">
-
-      <b>ITEM NAME</b>
-
-      <b>QTY</b>
-
-      <b>PRICE</b>
-
-      <b>TOTAL</b>
-
-    </div>
-
-
-    <div class="receiptLine"></div>
-
-
-    ${itemHtml}
-
-
-    <div class="receiptLine"></div>
-
-
-    <div class="receiptRow">
-
-      <b>Sub Total</b>
-
-      <b>
-        ${sale.subtotal.toFixed(2)}
-      </b>
-
-    </div>
-
-
-    <div class="receiptRow">
-
-      <b>Discount</b>
-
-      <b>
-        ${sale.discount.toFixed(2)}
-      </b>
-
-    </div>
-
-
-    <div class="receiptRow">
-
-      <b>GST @ ${settings.gst || 0}%</b>
-
-      <b>
-        ${sale.gstAmount.toFixed(2)}
-      </b>
-
-    </div>
-
-
-    <div class="receiptRow">
-
-      <b>Total amount</b>
-
-      <b>
-        ${sale.total.toFixed(2)}
-      </b>
-
-    </div>
-
-
-    <br>
-
-
-    <div>
-
-      Total No. Items :
-      ${sale.items.reduce(
-        (sum,item) =>
-          sum + item.qty,
-        0
-      )}
-
-    </div>
-
-
-    <br><br>
-
-
-    <div class="receiptCenter">
-
-      Tender Summary
-
-    </div>
-
-
-    <div class="receiptLine"></div>
-
-
-    <div class="receiptRow">
-
-      <b>
-        ${escapeHtml(sale.payment)}
-      </b>
-
-      <b>
-        ${sale.total.toFixed(2)}
-      </b>
-
-    </div>
-
-
-    <br>
-
-
-    <div>
-
-      Terminal Id :
-      ${escapeHtml(settings.posNumber)}
-
-    </div>
-
-
-    <div>
-
-      Merchant Id :
-      000001050647610
-
-    </div>
-
-
-    <div>
-
-      Card Type :
-      ${escapeHtml(sale.payment)}
-
-    </div>
-
-
-    <div>
-
-      Approval Code :
-      007244
-
-    </div>
-
-     Last 4 digits : 
-     1465
-
-    <div>
-
-      Member Tier :
-      ${escapeHtml(settings.memberTier)}
-
-    </div>
-
-
-    <br>
-
-
-    <div>
-
-      ${escapeHtml(settings.footerMessage)}
-
-    </div>
-
-
-    <br>
-
-
-    <div class="receiptCenter">
-
-    Thank you for shopping at Lotte Duty Free
-
-      <br>
-
-      For enquiry, please email
-
-      <br>
-
-      hello@liquorkaung.com
-
-    </div>
-
-
-    <div class="receiptLine"></div>
-
-
-    <div class="barcode">
-
-      |||||||||||||||||||||||
-
-    </div>
-
-
-    <div class="receiptCenter">
-
-      ${escapeHtml(settings.barcodeText)}
-
-    </div>
-
-  `;
-
-}
-
-
-function closeReceipt(){
-
-  document
-    .getElementById("receiptModal")
-    .classList
-    .add("hidden");
-
-}
-
-
-function printReceipt(){
-
-  window.print();
-
-}
-
-
-/* ================= REPORT ================= */
-
-function renderReport(){
-
-  const totalSales =
-    sales.reduce(
-      (sum,sale) =>
-        sum + Number(sale.total),
+    if (
+      products.some(
+        (p) => p.id === id
+      )
+    ) {
+      Alert.alert(
+        "Error",
+        "Product code already exists."
+      );
+
+      return;
+    }
+
+    setProducts((old) => [
+      ...old,
+      {
+        id,
+        barcode,
+        name,
+        price,
+        stock,
+      },
+    ]);
+
+    setNewProduct({
+      id: "",
+      barcode: "",
+      name: "",
+      price: "",
+      stock: "",
+    });
+
+    setShowAddProduct(false);
+  }
+
+  function deleteProduct(id) {
+    Alert.alert(
+      "Delete Product",
+      "Delete this product?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setProducts((old) =>
+              old.filter(
+                (p) => p.id !== id
+              )
+            );
+          },
+        },
+      ]
+    );
+  }
+
+  function login() {
+    if (
+      username === "admin" &&
+      password === "1234"
+    ) {
+      setCashier("ADMIN");
+      setLoggedIn(true);
+      setShowLogin(false);
+      setUsername("");
+      setPassword("");
+    } else {
+      Alert.alert(
+        "Login Failed",
+        "Username: admin\nPassword: 1234"
+      );
+    }
+  }
+
+  function logout() {
+    setLoggedIn(false);
+    setShowLogin(true);
+  }
+
+  function printReceipt() {
+    Alert.alert(
+      "Thermal Printer",
+      "Receipt is ready for printing.\n\nConnect your 80mm Bluetooth thermal printer and add a Bluetooth printer library for real printing."
+    );
+  }
+
+  function Receipt({ receipt }) {
+    if (!receipt) return null;
+
+    return (
+      <View style={styles.receipt}>
+        <Text style={styles.receiptTitle}>
+          {receipt.shopName}
+        </Text>
+
+        <Text style={styles.center}>
+          DUTY FREE / TRAVEL RETAIL POS
+        </Text>
+
+        <Text style={styles.center}>
+          SAMPLE RECEIPT
+        </Text>
+
+        <View style={styles.dash} />
+
+        <Text>
+          POS : 001
+        </Text>
+
+        <Text>
+          Cashier : {receipt.cashier}
+        </Text>
+
+        <Text>
+          Date : {receipt.date}
+        </Text>
+
+        <Text>
+          Time : {receipt.time}
+        </Text>
+
+        <Text>
+          Receipt No. : {receipt.id}
+        </Text>
+
+        <View style={styles.dash} />
+
+        <Text>
+          Passport No. :{" "}
+          {receipt.passport || "N/A"}
+        </Text>
+
+        <Text>
+          Nationality :{" "}
+          {receipt.nationality || "N/A"}
+        </Text>
+
+        <Text>
+          Flight Code :{" "}
+          {receipt.flightCode || "N/A"}
+        </Text>
+
+        <Text>
+          Flight Number :{" "}
+          {receipt.flightNumber ||
+            "N/A"}
+        </Text>
+
+        <Text>
+          Membership ID :{" "}
+          {receipt.memberId || "N/A"}
+        </Text>
+
+        <View style={styles.dash} />
+
+        {receipt.items.map(
+          (item) => (
+            <View
+              key={item.id}
+              style={{
+                marginBottom: 8,
+              }}
+            >
+              <Text
+                style={
+                  styles.receiptBold
+                }
+              >
+                {item.name}
+              </Text>
+
+              <Text>
+                {item.id}
+              </Text>
+
+              <Text>
+                {item.qty} ×{" "}
+                {CURRENCY}
+                {money(item.price)}
+              </Text>
+
+              <Text>
+                TOTAL{" "}
+                {CURRENCY}
+                {money(
+                  item.qty *
+                    item.price
+                )}
+              </Text>
+            </View>
+          )
+        )}
+
+        <View style={styles.dash} />
+
+        <Text>
+          Total No. Items :{" "}
+          {receipt.items.reduce(
+            (sum, x) =>
+              sum + x.qty,
+            0
+          )}
+        </Text>
+
+        <Text>
+          Sub Total : {CURRENCY}
+          {money(receipt.subtotal)}
+        </Text>
+
+        <Text>
+          GST @ 0.00% : {CURRENCY}
+          0.00
+        </Text>
+
+        <Text
+          style={styles.receiptTotal}
+        >
+          Total : {CURRENCY}
+          {money(receipt.total)}
+        </Text>
+
+        <View style={styles.dash} />
+
+        <Text>
+          Payment :{" "}
+          {receipt.payment}
+        </Text>
+
+        <View style={styles.dash} />
+
+        <Text style={styles.center}>
+          Thank you for shopping
+          with us.
+        </Text>
+
+        <Text style={styles.center}>
+          {receipt.shopName} POS
+        </Text>
+      </View>
+    );
+  }
+
+  function POSPage() {
+    return (
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={{
+          paddingBottom: 100,
+        }}
+      >
+        <TextInput
+          style={styles.search}
+          placeholder="🔎 Search / Barcode"
+          value={search}
+          onChangeText={setSearch}
+        />
+
+        <Text style={styles.title}>
+          Products
+        </Text>
+
+        <View
+          style={styles.productGrid}
+        >
+          {filteredProducts.map(
+            (product) => (
+              <TouchableOpacity
+                key={product.id}
+                style={[
+                  styles.product,
+                  product.stock <= 0 &&
+                    styles.disabled,
+                ]}
+                onPress={() =>
+                  addToCart(product)
+                }
+              >
+                <Text
+                  style={
+                    styles.productName
+                  }
+                >
+                  {product.name}
+                </Text>
+
+                <Text
+                  style={styles.small}
+                >
+                  CODE: {product.id}
+                </Text>
+
+                <Text
+                  style={styles.small}
+                >
+                  BARCODE:{" "}
+                  {product.barcode}
+                </Text>
+
+                <Text
+                  style={styles.price}
+                >
+                  {CURRENCY}
+                  {money(product.price)}
+                </Text>
+
+                <Text>
+                  Stock:{" "}
+                  {product.stock}
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            Customer / Travel
+          </Text>
+
+          <Input
+            placeholder="Passport No."
+            value={passport}
+            onChangeText={setPassport}
+          />
+
+          <Input
+            placeholder="Nationality"
+            value={nationality}
+            onChangeText={setNationality}
+          />
+
+          <Input
+            placeholder="Flight Code"
+            value={flightCode}
+            onChangeText={setFlightCode}
+          />
+
+          <Input
+            placeholder="Flight Number"
+            value={flightNumber}
+            onChangeText={setFlightNumber}
+          />
+
+          <Input
+            placeholder="Membership ID"
+            value={memberId}
+            onChangeText={setMemberId}
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            Cart ({totalItems})
+          </Text>
+
+          {cart.length === 0 ? (
+            <Text style={styles.empty}>
+              Cart is empty
+            </Text>
+          ) : (
+            cart.map((item) => (
+              <View
+                key={item.id}
+                style={styles.cartRow}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                  }}
+                >
+                  <Text
+                    style={
+                      styles.productName
+                    }
+                  >
+                    {item.name}
+                  </Text>
+
+                  <Text>
+                    {CURRENCY}
+                    {money(
+                      item.price
+                    )}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={
+                    styles.qtyButton
+                  }
+                  onPress={() =>
+                    changeQuantity(
+                      item.id,
+                      -1
+                    )
+                  }
+                >
+                  <Text>−</Text>
+                </TouchableOpacity>
+
+                <Text
+                  style={styles.qty}
+                >
+                  {item.qty}
+                </Text>
+
+                <TouchableOpacity
+                  style={
+                    styles.qtyButton
+                  }
+                  onPress={() =>
+                    changeQuantity(
+                      item.id,
+                      1
+                    )
+                  }
+                >
+                  <Text>+</Text>
+                </TouchableOpacity>
+
+                <Text
+                  style={styles.itemTotal}
+                >
+                  {CURRENCY}
+                  {money(
+                    item.qty *
+                      item.price
+                  )}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    removeCartItem(
+                      item.id
+                    )
+                  }
+                >
+                  <Text
+                    style={styles.delete}
+                  >
+                    ×
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalText}>
+              TOTAL
+            </Text>
+
+            <Text style={styles.total}>
+              {CURRENCY}
+              {money(subtotal)}
+            </Text>
+          </View>
+
+          <Text style={styles.title}>
+            Payment
+          </Text>
+
+          <View
+            style={styles.paymentRow}
+          >
+            {[
+              "CASH",
+              "CARD",
+              "TRANSFER",
+            ].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.payment,
+                  payment === type &&
+                    styles.paymentActive,
+                ]}
+                onPress={() =>
+                  setPayment(type)
+                }
+              >
+                <Text
+                  style={
+                    payment === type
+                      ? styles.white
+                      : null
+                  }
+                >
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View
+            style={styles.actionRow}
+          >
+            <TouchableOpacity
+              style={styles.complete}
+              onPress={completeSale}
+            >
+              <Text style={styles.white}>
+                COMPLETE SALE
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.clear}
+              onPress={clearCart}
+            >
+              <Text style={styles.white}>
+                CLEAR
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  function StockPage() {
+    return (
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={{
+          paddingBottom: 100,
+        }}
+      >
+        <TouchableOpacity
+          style={styles.primary}
+          onPress={() =>
+            setShowAddProduct(true)
+          }
+        >
+          <Text style={styles.white}>
+            + ADD PRODUCT
+          </Text>
+        </TouchableOpacity>
+
+        {products.map((product) => (
+          <View
+            key={product.id}
+            style={styles.stockCard}
+          >
+            <View
+              style={{
+                flex: 1,
+              }}
+            >
+              <Text
+                style={
+                  styles.productName
+                }
+              >
+                {product.name}
+              </Text>
+
+              <Text>
+                Code: {product.id}
+              </Text>
+
+              <Text>
+                Barcode:{" "}
+                {product.barcode}
+              </Text>
+            </View>
+
+            <View>
+              <Text>
+                Stock:{" "}
+                {product.stock}
+              </Text>
+
+              <Text
+                style={styles.price}
+              >
+                {CURRENCY}
+                {money(product.price)}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  deleteProduct(
+                    product.id
+                  )
+                }
+              >
+                <Text
+                  style={styles.delete}
+                >
+                  DELETE
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    );
+  }
+
+  function SalesPage() {
+    const totalSales = sales.reduce(
+      (sum, sale) =>
+        sum + sale.total,
       0
     );
 
+    return (
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={{
+          paddingBottom: 100,
+        }}
+      >
+        <View style={styles.summary}>
+          <Text style={styles.summaryTitle}>
+            SALES SUMMARY
+          </Text>
 
-  document
-    .getElementById("todaySales")
-    .textContent =
-    money(totalSales);
+          <Text>
+            Transactions:{" "}
+            {sales.length}
+          </Text>
 
+          <Text style={styles.summaryTotal}>
+            {CURRENCY}
+            {money(totalSales)}
+          </Text>
+        </View>
 
-  document
-    .getElementById("receiptCount")
-    .textContent =
-    sales.length;
+        <Text style={styles.title}>
+          Sales History
+        </Text>
 
+        {sales.length === 0 ? (
+          <Text style={styles.empty}>
+            No sales yet.
+          </Text>
+        ) : (
+          [...sales]
+            .reverse()
+            .map((sale) => (
+              <TouchableOpacity
+                key={sale.id}
+                style={styles.saleCard}
+                onPress={() => {
+                  setSelectedReceipt(
+                    sale
+                  );
+                  setShowReceipt(
+                    true
+                  );
+                }}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                  }}
+                >
+                  <Text
+                    style={
+                      styles.productName
+                    }
+                  >
+                    {sale.id}
+                  </Text>
 
-  document
-    .getElementById("productCount")
-    .textContent =
-    products.length;
+                  <Text>
+                    {sale.date}{" "}
+                    {sale.time}
+                  </Text>
 
+                  <Text>
+                    Cashier:{" "}
+                    {sale.cashier}
+                  </Text>
+                </View>
 
-  const container =
-    document.getElementById("salesHistory");
-
-
-  if(!container) return;
-
-
-  if(sales.length === 0){
-
-    container.innerHTML =
-      "<p>No sales yet.</p>";
-
-    return;
-
+                <Text
+                  style={styles.price}
+                >
+                  {CURRENCY}
+                  {money(sale.total)}
+                </Text>
+              </TouchableOpacity>
+            ))
+        )}
+      </ScrollView>
+    );
   }
 
+  function SettingsPage() {
+    return (
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={{
+          paddingBottom: 100,
+        }}
+      >
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            Store Settings
+          </Text>
 
-  container.innerHTML =
-    sales.map(sale => `
+          <Input
+            placeholder="Shop Name"
+            value={shopName}
+            onChangeText={setShopName}
+          />
 
-      <div class="saleItem">
+          <Input
+            placeholder="Cashier Name"
+            value={cashier}
+            onChangeText={setCashier}
+          />
 
-        <div>
-
-          <b>
-            Receipt #
-            ${sale.id}
-          </b>
-
-          <small>
-            ${escapeHtml(sale.date)}
-          </small>
-
-        </div>
-
-
-        <div>
-
-          <b>
-            ${money(sale.total)}
-          </b>
-
-          <br>
-
-          <button
-            onclick="viewOldReceipt(${sale.id})"
+          <TouchableOpacity
+            style={styles.primary}
+            onPress={() =>
+              Alert.alert(
+                "Saved",
+                "Settings saved."
+              )
+            }
           >
-            View
-          </button>
+            <Text style={styles.white}>
+              SAVE SETTINGS
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        </div>
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            Printer
+          </Text>
 
-      </div>
+          <Text style={styles.info}>
+            Receipt Width: 80mm
+          </Text>
 
-    `).join("");
+          <Text style={styles.info}>
+            Printer: Bluetooth Thermal
+          </Text>
 
-}
+          <TouchableOpacity
+            style={styles.primary}
+            onPress={() =>
+              Alert.alert(
+                "Printer",
+                "Bluetooth printer setup requires a native printer package."
+              )
+            }
+          >
+            <Text style={styles.white}>
+              CONNECT PRINTER
+            </Text>
+          </TouchableOpacity>
+        </View>
 
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            Security
+          </Text>
 
-function viewOldReceipt(id){
-
-  const sale =
-    sales.find(
-      sale => sale.id === id
+          <TouchableOpacity
+            style={styles.logout}
+            onPress={logout}
+          >
+            <Text style={styles.white}>
+              LOGOUT
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     );
-
-  if(!sale) return;
-
-
-  generateReceipt(sale);
-
-
-  document
-    .getElementById("receiptModal")
-    .classList
-    .remove("hidden");
-
-}
-
-
-function clearSales(){
-
-  if(!confirm("Delete all sales history?")) return;
-
-
-  sales = [];
-
-
-  localStorage.setItem(
-    "lk_sales",
-    JSON.stringify(sales)
-  );
-
-
-  renderReport();
-
-}
-
-
-/* ================= SETTINGS ================= */
-
-function loadSettingsToForm(){
-
-  const ids = [
-
-    "shopName",
-    "shopType",
-    "shopType",
-    "shopAddress",
-    "posNumber",
-    "cashierNumber",
-    "cashierName",
-    "currency",
-
-    "reprintedBy",
-    "passportNumber",
-    "nationality",
-    "flightCode",
-    "flightNumber",
-    "lotteMembership",
-
-    "gst",
-    "memberTier",
-    "footerMessage",
-    "barcodeText"
-
-  ];
-
-
-  ids.forEach(id => {
-
-    const element =
-      document.getElementById(id);
-
-    if(element && settings[id] !== undefined){
-
-      element.value =
-        settings[id];
-
-    }
-
-  });
-
-}
-
-
-function saveSettings(){
-
-  const ids = [
-
-    "shopName",
-    "shopType",
-    "shopAddress",
-    "posNumber",
-    "cashierNumber",
-    "cashierName",
-    "currency",
-
-    "reprintedBy",
-    "passportNumber",
-    "nationality",
-    "flightCode",
-    "flightNumber",
-    "lotteMembership",
-
-    "gst",
-    "memberTier",
-    "footerMessage",
-    "barcodeText"
-
-  ];
-
-
-  ids.forEach(id => {
-
-    settings[id] =
-      document
-        .getElementById(id)
-        .value;
-
-  });
-
-
-  localStorage.setItem(
-    "lk_settings",
-    JSON.stringify(settings)
-  );
-
-
-  alert("Settings Saved!");
-
-  renderCart();
-
-}
-
-
-/* ================= BACKUP ================= */
-
-function backupData(){
-
-  const data = {
-
-    products,
-    sales,
-    settings
-
-  };
-
-
-  const blob =
-    new Blob(
-      [JSON.stringify(data,null,2)],
-      {
-        type:"application/json"
-      }
-    );
-
-
-  const url =
-    URL.createObjectURL(blob);
-
-
-  const link =
-    document.createElement("a");
-
-
-  link.href = url;
-
-  link.download =
-    "liquor-kaung-backup.json";
-
-
-  link.click();
-
-
-  URL.revokeObjectURL(url);
-
-}
-
-
-function restoreBackup(event){
-
-  const file =
-    event.target.files[0];
-
-  if(!file) return;
-
-
-  const reader =
-    new FileReader();
-
-
-  reader.onload = function(e){
-
-    try{
-
-      const data =
-        JSON.parse(e.target.result);
-
-
-      if(data.products){
-
-        products =
-          data.products;
-
-      }
-
-
-      if(data.sales){
-
-        sales =
-          data.sales;
-
-      }
-
-
-      if(data.settings){
-
-        settings =
-          data.settings;
-
-      }
-
-
-      saveProducts();
-
-
-      localStorage.setItem(
-        "lk_sales",
-        JSON.stringify(sales)
-      );
-
-
-      localStorage.setItem(
-        "lk_settings",
-        JSON.stringify(settings)
-      );
-
-
-      initApp();
-
-
-      alert("Backup Restored!");
-
-    }catch(error){
-
-      alert("Invalid backup file!");
-
-    }
-
-  };
-
-
-  reader.readAsText(file);
-
-}
-
-
-/* ================= SECURITY ================= */
-
-function escapeHtml(text){
-
-  if(text === undefined || text === null){
-
-    return "";
-
   }
 
+  if (!loggedIn) {
+    return (
+      <SafeAreaView
+        style={styles.loginScreen}
+      >
+        <Text
+          style={styles.loginTitle}
+        >
+          {STORE_NAME}
+        </Text>
 
-  return String(text)
+        <Text style={styles.loginSub}>
+          POS LOGIN
+        </Text>
 
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+        <Input
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+        />
 
+        <Input
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <TouchableOpacity
+          style={styles.primary}
+          onPress={login}
+        >
+          <Text style={styles.white}>
+            LOGIN
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.loginHint}>
+          Demo Login: admin / 1234
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.header}>
+        <View>
+          <Text
+            style={styles.headerTitle}
+          >
+            {shopName}
+          </Text>
+
+          <Text
+            style={styles.headerSub}
+          >
+            CASHIER: {cashier}
+          </Text>
+        </View>
+
+        <Text
+          style={styles.headerTotal}
+        >
+          {CURRENCY}
+          {money(subtotal)}
+        </Text>
+      </View>
+
+      {page === "POS" && <POSPage />}
+      {page === "STOCK" && (
+        <StockPage />
+      )}
+      {page === "SALES" && (
+        <SalesPage />
+      )}
+      {page === "SETTINGS" && (
+        <SettingsPage />
+      )}
+
+      <View style={styles.nav}>
+        <NavButton
+          icon="🛒"
+          text="POS"
+          active={page === "POS"}
+          onPress={() =>
+            setPage("POS")
+          }
+        />
+
+        <NavButton
+          icon="📦"
+          text="Stock"
+          active={page === "STOCK"}
+          onPress={() =>
+            setPage("STOCK")
+          }
+        />
+
+        <NavButton
+          icon="📊"
+          text="Sales"
+          active={page === "SALES"}
+          onPress={() =>
+            setPage("SALES")
+          }
+        />
+
+        <NavButton
+          icon="⚙️"
+          text="Settings"
+          active={
+            page === "SETTINGS"
+          }
+          onPress={() =>
+            setPage("SETTINGS")
+          }
+        />
+      </View>
+
+      <Modal
+        visible={showReceipt}
+        animationType="slide"
+      >
+        <SafeAreaView
+          style={styles.safe}
+        >
+          <View
+            style={styles.modalHeader}
+          >
+            <Text
+              style={styles.title}
+            >
+              RECEIPT
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                setShowReceipt(false)
+              }
+            >
+              <Text
+                style={styles.close}
+              >
+                CLOSE
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView>
+            <Receipt
+              receipt={
+                selectedReceipt
+              }
+            />
+
+            <TouchableOpacity
+              style={styles.primary}
+              onPress={printReceipt}
+            >
+              <Text
+                style={styles.white}
+              >
+                🖨 PRINT 80mm RECEIPT
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showAddProduct}
+        animationType="slide"
+        transparent
+      >
+        <View style={styles.overlay}>
+          <View
+            style={styles.addModal}
+          >
+            <Text
+              style={styles.title}
+            >
+              Add Product
+            </Text>
+
+            <Input
+              placeholder="Product Code"
+              value={newProduct.id}
+              onChangeText={(v) =>
+                setNewProduct({
+                  ...newProduct,
+                  id: v,
+                })
+              }
+            />
+
+            <Input
+              placeholder="Barcode"
+              value={newProduct.barcode}
+              onChangeText={(v) =>
+                setNewProduct({
+                  ...newProduct,
+                  barcode: v,
+                })
+              }
+            />
+
+            <Input
+              placeholder="Product Name"
+              value={newProduct.name}
+              onChangeText={(v) =>
+                setNewProduct({
+                  ...newProduct,
+                  name: v,
+                })
+              }
+            />
+
+            <Input
+              placeholder="Price"
+              keyboardType="decimal-pad"
+              value={newProduct.price}
+              onChangeText={(v) =>
+                setNewProduct({
+                  ...newProduct,
+                  price: v,
+                })
+              }
+            />
+
+            <Input
+              placeholder="Stock"
+              keyboardType="numeric"
+              value={newProduct.stock}
+              onChangeText={(v) =>
+                setNewProduct({
+                  ...newProduct,
+                  stock: v,
+                })
+              }
+            />
+
+            <View
+              style={styles.actionRow}
+            >
+              <TouchableOpacity
+                style={styles.primary}
+                onPress={addProduct}
+              >
+                <Text
+                  style={styles.white}
+                >
+                  ADD
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.clear}
+                onPress={() =>
+                  setShowAddProduct(
+                    false
+                  )
+                }
+              >
+                <Text
+                  style={styles.white}
+                >
+                  CANCEL
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
 }
+
+function Input({
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType,
+  secureTextEntry,
+}) {
+  return (
+    <TextInput
+      style={styles.input}
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      secureTextEntry={secureTextEntry}
+    />
+  );
+}
+
+function NavButton({
+  icon,
+  text,
+  active,
+  onPress,
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.navButton,
+        active &&
+          styles.navButtonActive,
+      ]}
+      onPress={onPress}
+    >
+      <Text style={styles.navIcon}>
+        {icon}
+      </Text>
+
+      <Text
+        style={
+          active
+            ? styles.navTextActive
+            : styles.navText
+        }
+      >
+        {text}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#f2f3f5",
+  },
+
+  header: {
+    backgroundColor: "#111",
+    padding: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  headerTitle: {
+    color: "#fff",
+    fontSize: 21,
+    fontWeight: "900",
+  },
+
+  headerSub: {
+    color: "#aaa",
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  headerTotal: {
+    color: "#fff",
+    fontSize: 19,
+    fontWeight: "800",
+  },
+
+  body: {
+    flex: 1,
+    padding: 12,
+  },
+
+  search: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 13,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+
+  title: {
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 12,
+  },
+
+  productGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  product: {
+    width: "48%",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+
+  disabled: {
+    opacity: 0.4,
+  },
+
+  productName: {
+    fontWeight: "800",
+    fontSize: 14,
+  },
+
+  small: {
+    fontSize: 10,
+    color: "#777",
+    marginTop: 3,
+  },
+
+  price: {
+    fontSize: 16,
+    fontWeight: "900",
+    marginVertical: 5,
+  },
+
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 14,
+    marginVertical: 7,
+  },
+
+  input: {
+    backgroundColor: "#fafafa",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 11,
+    marginBottom: 9,
+  },
+
+  cartRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    paddingVertical: 11,
+    gap: 7,
+  },
+
+  qtyButton: {
+    backgroundColor: "#eee",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+
+  qty: {
+    fontWeight: "800",
+    minWidth: 20,
+    textAlign: "center",
+  },
+
+  itemTotal: {
+    fontWeight: "800",
+  },
+
+  delete: {
+    color: "#c00",
+    fontWeight: "900",
+    fontSize: 13,
+  },
+
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 15,
+  },
+
+  totalText: {
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  total: {
+    fontSize: 22,
+    fontWeight: "900",
+  },
+
+  paymentRow: {
+    flexDirection: "row",
+    gap: 7,
+    marginBottom: 12,
+  },
+
+  payment: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+  },
+
+  paymentActive: {
+    backgroundColor: "#111",
+    borderColor: "#111",
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  complete: {
+    flex: 1,
+    backgroundColor: "#111",
+    borderRadius: 9,
+    padding: 14,
+    alignItems: "center",
+  },
+
+  clear: {
+    backgroundColor: "#777",
+    borderRadius: 9,
+    padding: 14,
+    alignItems: "center",
+  },
+
+  primary: {
+    backgroundColor: "#111",
+    borderRadius: 9,
+    padding: 14,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  logout: {
+    backgroundColor: "#b00020",
+    borderRadius: 9,
+    padding: 14,
+    alignItems: "center",
+  },
+
+  white: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+
+  empty: {
+    textAlign: "center",
+    color: "#888",
+    padding: 20,
+  },
+
+  stockCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 13,
+    marginBottom: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  summary: {
+    backgroundColor: "#111",
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 15,
+  },
+
+  summaryTitle: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 17,
+  },
+
+  summaryTotal: {
+    color: "#fff",
+    fontSize: 25,
+    fontWeight: "900",
+    marginTop: 8,
+  },
+
+  saleCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 9,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  nav: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+    flexDirection: "row",
+  },
+
+  navButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  navButtonActive: {
+    backgroundColor: "#eee",
+  },
+
+  navIcon: {
+    fontSize: 20,
+  },
+
+  navText: {
+    fontSize: 11,
+    color: "#777",
+  },
+
+  navTextActive: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "#111",
+  },
+
+  modalHeader: {
+    backgroundColor: "#fff",
+    padding: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  close: {
+    color: "#c00",
+    fontWeight: "900",
+  },
+
+  receipt: {
+    backgroundColor: "#fff",
+    width: "94%",
+    alignSelf: "center",
+    margin: 12,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+
+  receiptTitle: {
+    textAlign: "center",
+    fontSize: 19,
+    fontWeight: "900",
+  },
+
+  center: {
+    textAlign: "center",
+  },
+
+  receiptBold: {
+    fontWeight: "900",
+  },
+
+  receiptTotal: {
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 5,
+  },
+
+  dash: {
+    borderTopWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#111",
+    marginVertical: 10,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: "#0008",
+    justifyContent: "center",
+    padding: 15,
+  },
+
+  addModal: {
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    padding: 18,
+  },
+
+  loginScreen: {
+    flex: 1,
+    backgroundColor: "#111",
+    justifyContent: "center",
+    padding: 25,
+  },
+
+  loginTitle: {
+    color: "#fff",
+    textAlign: "center",
+    fontSize: 30,
+    fontWeight: "900",
+  },
+
+  loginSub: {
+    color: "#aaa",
+    textAlign: "center",
+    marginBottom: 30,
+  },
+
+  loginHint: {
+    color: "#888",
+    textAlign: "center",
+    marginTop: 15,
+  },
+
+  info: {
+    color: "#555",
+    marginBottom: 8,
+  },
+});
