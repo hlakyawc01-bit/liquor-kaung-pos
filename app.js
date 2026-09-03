@@ -8,11 +8,10 @@ let editingProduct = null;
 /* ================= SETTINGS ================= */
 
 const defaultSettings = {
-  shopName: "LOTTE TRAVEL RETAIL SINGAPORE PTE. LTD.",
-  shopType: "LOTTE DEPARTMENT STORE",
+  shopName: "Liquor HK.",
+  shopType: "Liquor Hk",
   shopType: "Orchard Airport Terminal 2",
-  shopAddress: "#02-167, Airport Terminal 2 Central,
-                       Singapore 819643",
+  shopAddress: "2577",
   posNumber: "217",
   cashierNumber: "R03090",
   cashierName: "CASHIER",
@@ -28,7 +27,7 @@ const defaultSettings = {
   gst: "0",
   memberTier: "Platinum",
   footerMessage: "Thank you for shopping with us",
-  barcodeText: "LOT2172617211466"
+  barcodeText: "LOT T2172617211466"
 };
 
 
