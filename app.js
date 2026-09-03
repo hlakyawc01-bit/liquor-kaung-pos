@@ -12,7 +12,7 @@ const defaultSettings = {
   shopType: "LOTTE DEPARTMENT STORE",
   shopType: "Orchard Airport Terminal 2",
   shopAddress: "#02-167, Airport Terminal 2 Central,
-Singapore 819643",
+                       Singapore 819643",
   posNumber: "217",
   cashierNumber: "R03090",
   cashierName: "CASHIER",
@@ -967,11 +967,11 @@ function generateReceipt(sale){
 
       ${escapeHtml(settings.shopAddress)}
 
-      <br><br>
+      <br>
 
       GST Reg No.201047172R
 
-    </div>
+    <br>
 
 
     <div class="receiptLine"></div>
@@ -1024,8 +1024,6 @@ function generateReceipt(sale){
     <div class="receiptTitle">
 
       *****DUPLICATE*****
-
-    </div>
 
 
     <div>
@@ -1242,17 +1240,17 @@ function generateReceipt(sale){
     </div>
 
       Tier Validity: 
-      ${escapeHtml(settings.memberTier)}
+      ${escapeHtml(settings.TierValidity)}
       
     <br>
     
       Accumulated Net Spend:
-      ${escapeHtml(settings.memberTier)}
+      ${escapeHtml(settings.accumulatednetspend)}
 
     <div>
     
       Issued Points:
-      ${escapeHtml(settings.footerMessage)}
+      ${escapeHtml(settings.Issuedpoints)}
 
     </div>
 
@@ -1265,7 +1263,7 @@ function generateReceipt(sale){
 
       Thank you for shopping at Lotte Duty Free
 
-      <br><br>
+      <br>
 
       For enquiry, please email :
 
@@ -1469,6 +1467,9 @@ function loadSettingsToForm(){
 
     "gst",
     "memberTier",
+    "Tier Validity",
+    "Accumulated Ned Spend",
+    "Isscued Points",
     "footerMessage",
     "barcodeText"
 
@@ -1515,9 +1516,11 @@ function saveSettings(){
 
     "gst",
     "memberTier",
+    "Tier Validity",
+    "Accumulated Ned Spend",
+    "Isscued Points",
     "footerMessage",
     "barcodeText"
-
   ];
 
 
