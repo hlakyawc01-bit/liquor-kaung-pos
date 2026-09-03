@@ -8,11 +8,10 @@ let editingProduct = null;
 /* ================= SETTINGS ================= */
 
 const defaultSettings = {
-  shopName: "LOTTE TRAVEL RETAIL            SINGAPORE PTE. LTD.",
+  shopName: "LOTTE TRAVEL RETAIL SINGAPORE PTE. LTD.",
   shopType: "LOTTE DEPARTMENT STORE",
   shopType: "Orchard Airport Terminal 2",
-  shopAddress: "#02-167, Airport Terminal 2 Central,
-Singapore 819643",
+  shopAddress: "#02-167 Singapore",
   posNumber: "217",
   cashierNumber: "R03090",
   cashierName: "CASHIER",
