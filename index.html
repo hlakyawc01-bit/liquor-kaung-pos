@@ -1,33 +1,439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <meta
-    name="theme-color"
-    content="#111111"
-  />
-
-  <meta
-    name="description"
-    content="Liquor TR POS System"
-  />
-
-  <title>Liquor TR POS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIQUOR tr POS</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <noscript>
-    You need to enable JavaScript to run this POS application.
-  </noscript>
+<!-- LOGIN -->
+<section id="loginPage" class="loginPage">
+  <div class="loginCard">
+    <div class="loginLogo">🥃</div>
+    <h1>LIQUOR tr</h1>
+    <p>OFFLINE POS SYSTEM</p>
 
-  <div id="root"></div>
+    <input id="loginUser" placeholder="Username" value="admin">
+    <input id="loginPass" type="password" placeholder="Password" value="1234">
+
+    <button onclick="login()">LOGIN</button>
+
+    <small>Demo: admin / 1234</small>
+  </div>
+</section>
+
+
+<!-- APP -->
+<div id="appPage" class="hidden">
+
+  <header>
+    <div>
+      <b>🥃 LIQUOR tr </b>
+      <span>OFFLINE POS SYSTEM</span>
+    </div>
+
+    <button class="logoutBtn" onclick="logout()">Logout</button>
+  </header>
+
+
+  <!-- NAV -->
+  <nav>
+    <button class="nav active" onclick="showPage('sale',this)">
+      🛒 Sale
+    </button>
+
+    <button class="nav" onclick="showPage('products',this)">
+      📦 Products
+    </button>
+
+    <button class="nav" onclick="showPage('report',this)">
+      📊 Report
+    </button>
+
+    <button class="nav" onclick="showPage('settings',this)">
+      ⚙ Settings
+    </button>
+  </nav>
+
+
+  <main>
+
+    <!-- ================= SALE ================= -->
+
+    <section id="sale" class="page">
+
+      <div class="saleGrid">
+
+        <!-- PRODUCTS -->
+        <div class="panel">
+
+          <div class="panelTitle">
+            <h2>Products</h2>
+
+            <input
+              id="searchProduct"
+              placeholder="Search product..."
+              oninput="renderProducts()"
+            >
+          </div>
+
+          <div id="saleProducts" class="saleProducts"></div>
+
+        </div>
+
+
+        <!-- CART -->
+        <div class="panel cartPanel">
+
+          <h2>Shopping Cart</h2>
+
+          <div id="cartList"></div>
+
+          <div class="totalBox">
+
+            <div>
+              <span>Subtotal</span>
+              <b id="subtotal">SGD 0.00</b>
+            </div>
+
+            <div>
+              <span>Discount</span>
+              <b id="discountView">SGD 0.00</b>
+            </div>
+
+            <div class="grand">
+              <span>TOTAL</span>
+              <b id="grandTotal">SGD 0.00</b>
+            </div>
+
+          </div>
+
+
+          <label>Discount</label>
+          <input
+            id="discount"
+            type="number"
+            value="0"
+            min="0"
+            oninput="renderCart()"
+          >
+
+
+          <label>Payment Method</label>
+
+          <select id="paymentMethod">
+            <option>Cash</option>
+            <option>Credit/Debit Card</option>
+            <option>Visa</option>
+            <option>Mastercard</option>
+            <option>NETS</option>
+          </select>
+
+
+          <button class="payBtn" onclick="checkout()">
+            COMPLETE SALE
+          </button>
+
+          <button class="clearBtn" onclick="clearCart()">
+            Clear Cart
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ================= PRODUCTS ================= -->
+
+    <section id="products" class="page hidden">
+
+      <div class="panel">
+
+        <div class="titleRow">
+          <h2>Product Management</h2>
+
+          <button onclick="addProduct()">
+            + Add Product
+          </button>
+        </div>
+
+
+        <div id="productForm" class="productForm hidden">
+
+          <input id="editCode" placeholder="Product Code">
+
+          <input id="editName" placeholder="Product Name">
+
+          <input
+            id="editPrice"
+            type="number"
+            placeholder="Price (SGD)"
+          >
+
+          <input
+            id="editStock"
+            type="number"
+            placeholder="Stock Quantity"
+          >
+
+          <input
+            id="editDescription"
+            placeholder="Description"
+          >
+
+          <button onclick="saveProduct()">
+            SAVE PRODUCT
+          </button>
+
+          <button class="cancelBtn" onclick="cancelProduct()">
+            Cancel
+          </button>
+
+        </div>
+
+
+        <div id="productList"></div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ================= REPORT ================= -->
+
+    <section id="report" class="page hidden">
+
+      <div class="reportGrid">
+
+        <div class="statCard">
+          <span>Today's Sales</span>
+          <b id="todaySales">SGD 0.00</b>
+        </div>
+
+        <div class="statCard">
+          <span>Total Receipts</span>
+          <b id="receiptCount">0</b>
+        </div>
+
+        <div class="statCard">
+          <span>Total Products</span>
+          <b id="productCount">0</b>
+        </div>
+
+      </div>
+
+
+      <div class="panel">
+
+        <div class="titleRow">
+          <h2>Sales History</h2>
+
+          <button class="dangerBtn" onclick="clearSales()">
+            Clear History
+          </button>
+        </div>
+
+        <div id="salesHistory"></div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ================= SETTINGS ================= -->
+
+    <section id="settings" class="page hidden">
+
+      <div class="panel settingsPanel">
+
+        <h2>Settings</h2>
+
+
+        <h3>Shop Information</h3>
+
+        <div class="settingsGrid">
+
+          <input
+            id="shopName"
+            placeholder="Shop Name"
+          >
+
+          <input
+            id="shopType"
+            placeholder="Shop Type / Store Name"
+          >
+
+          <input
+            id="shopAddress"
+            placeholder="Shop Address"
+          >
+
+          <input
+            id="posNumber"
+            placeholder="POS Number"
+          >
+
+          <input
+            id="cashierNumber"
+            placeholder="Cashier Number"
+          >
+
+          <input
+            id="cashierName"
+            placeholder="Cashier Name"
+          >
+
+          <select id="currency">
+            <option value="SGD">SGD</option>
+            <option value="USD">USD</option>
+            <option value="MMK">MMK</option>
+            <option value="THB">THB</option>
+          </select>
+
+        </div>
+
+
+        <h3>Duplicate Receipt Information</h3>
+
+        <div class="settingsGrid">
+
+          <input
+            id="reprintedBy"
+            placeholder="Reprinted By"
+          >
+
+          <input
+            id="passportNumber"
+            placeholder="Passport Number"
+          >
+
+          <input
+            id="nationality"
+            placeholder="Nationality"
+          >
+
+          <input
+            id="flightCode"
+            placeholder="Flight Code"
+          >
+
+          <input
+            id="flightNumber"
+            placeholder="Flight Number"
+          >
+
+          <input
+            id="lotteMembership"
+            placeholder="Lotte Membership ID"
+          >
+
+        </div>
+
+
+        <h3>Receipt Settings</h3>
+
+        <div class="settingsGrid">
+
+          <input
+            id="gst"
+            type="number"
+            placeholder="GST %"
+          >
+
+          <input
+            id="memberTier"
+            placeholder="Member Tier"
+          >
+
+          <input
+            id="footerMessage"
+            placeholder="Footer Message"
+          >
+
+          <input
+            id="barcodeText"
+            placeholder="Barcode Number"
+          >
+
+        </div>
+
+
+        <button onclick="saveSettings()">
+          SAVE SETTINGS
+        </button>
+
+      </div>
+
+
+      <!-- DATA -->
+
+      <div class="panel dataPanel">
+
+        <h2>Data</h2>
+
+        <button onclick="restoreDemoProducts()">
+          Restore Demo Products
+        </button>
+
+        <button onclick="backupData()">
+          Backup Data
+        </button>
+
+
+        <label class="fileBtn">
+          Restore Backup
+          <input
+            type="file"
+            accept=".json"
+            onchange="restoreBackup(event)"
+          >
+        </label>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+
+<!-- RECEIPT MODAL -->
+
+<div id="receiptModal" class="modal hidden">
+
+  <div class="receiptWrap">
+
+    <div class="modalButtons">
+
+      <button onclick="printReceipt()">
+        🖨 Print
+      </button>
+
+      <button onclick="closeReceipt()">
+        ✕ Close
+      </button>
+
+    </div>
+
+
+    <div id="receipt" class="receipt"></div>
+
+  </div>
+
+</div>
+
+
+<script src="app.js"></script>
 
 </body>
 </html>
