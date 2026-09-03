@@ -8,10 +8,11 @@ let editingProduct = null;
 /* ================= SETTINGS ================= */
 
 const defaultSettings = {
-  shopName: "LIQUOR KAUNG",
-  shopType: "OFFLINE POS",
-  shopType: "OFFLINE POS",
-  shopAddress: "Singapore",
+  shopName: "LOTTE TRAVEL RETAIL            SINGAPORE PTE. LTD.",
+  shopType: "LOTTE DEPARTMENT STORE",
+  shopType: "Orchard Airport Terminal 2",
+  shopAddress: "#02-167, Airport Terminal 2 Central,
+Singapore 819643",
   posNumber: "217",
   cashierNumber: "R03090",
   cashierName: "CASHIER",
@@ -26,18 +27,8 @@ const defaultSettings = {
 
   gst: "0",
   memberTier: "Platinum",
-  Tier Validity: "19 May 27",
-  Accumulated Net Spend: "$8994",
-  Issued Points: "13740",
-  footerMessage: "Changi Rewards points earned will be
-valid for 12 months from the date of
-issuance, through the last day of the
-final month. Redeem rewards with your
-points on Rewards catalogue or offset
-your next purchase on iShopChangi.com.
-For more details, please refer to
-Changi App.",
-  barcodeText: "LOT T2172617211466"
+  footerMessage: "Thank you for shopping with us",
+  barcodeText: "LOT2172617211466"
 };
 
 
@@ -980,10 +971,7 @@ function generateReceipt(sale){
 
       GST Reg No.201047172R
 
-    <div>
-
-
-    <div class="receiptLine"></div>
+      </div>
 
 
     <div class="receiptRow">
@@ -1238,23 +1226,21 @@ function generateReceipt(sale){
       Approval Code :
       007244
 
-    <div>
-
-      Last 4 digits : 
-      1465
-
     </div>
+
+     Last 4 digits : 
+     1465
+
+    <div>
 
       Member Tier :
       ${escapeHtml(settings.memberTier)}
 
     </div>
 
-      Tier Validity: 19 May 27
 
     <br>
 
-      Accumulated Net Spend: $8994
 
     <div>
 
@@ -1268,9 +1254,11 @@ function generateReceipt(sale){
 
     <div class="receiptCenter">
 
-   Thank you for shopping at Lotte Duty Free
+    Thank you for shopping at Lotte Duty Free
 
-        For enquiry, please email
+      <br>
+
+      For enquiry, please email
 
       <br>
 
@@ -1453,6 +1441,7 @@ function loadSettingsToForm(){
   const ids = [
 
     "shopName",
+    "shopType",
     "shopType",
     "shopAddress",
     "posNumber",
